@@ -1,0 +1,5 @@
+
+
+Actual values of the variables:
+targetFulfillmentForYear1        1e+30
+Value of objective function: 1000000000000000019884624838656.00000000

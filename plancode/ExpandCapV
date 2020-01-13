@@ -1,0 +1,1 @@
+java planning.CapitalTableExpandVert ../iouk/hexpandedcapitalstockmatrix2015.csv ../iouk/asset2sources.csv ../iouk/domesticiot.csv #> ../iouk/Vexpandedcapitalstockmatrix2015.csv

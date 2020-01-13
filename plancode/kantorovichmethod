@@ -1,0 +1,9 @@
+echo   prepare the linear programme and print time taken
+time  java planning.nyearplan testflow.csv testcap.csv testdep.csv testtarg.csv   >test.lp
+echo statistics of the linear programme specification
+echo equation count, identifier count, chars
+wc test.lp  
+echo execute and time  the linear programme
+time lp_solve <test.lp|sort >test.txt 
+echo Degree of plan fulfillment using linear programme
+tail --lines=2 test.txt 
