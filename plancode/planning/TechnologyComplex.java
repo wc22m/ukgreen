@@ -86,8 +86,8 @@ public class TechnologyComplex {
 
     public String allheadings() {
         String s="";
-        for(String p:productIds)s+=","+p;
-        for(Technique t:techniques) s+=","+t.getIdentifier() ;
+        for(String p:productIds)s+=",\""+p+"\"";
+        for(Technique t:techniques) s+=", \""+t.getIdentifier()+"\""  ;
         return s;
     }
     public int productCount() {

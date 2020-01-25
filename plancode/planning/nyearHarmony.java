@@ -8,12 +8,12 @@ import java.util.*;
  *
  * <p>
     Copyright (C) 2018 William Paul Cockshott
-
+<p>
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
+<p>
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -352,14 +352,14 @@ public class nyearHarmony extends nyearplan {
         writeln("");
     }
     static void  writeln(double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
         writeln("");
     }
     static void  writeln(String []s) {
-        for(int i=0; i<s.length; i++)System.out.printf(","+s[i]);
+        for(int i=0; i<s.length; i++)System.out.printf(",\""+s[i]+"\"");
         writeln("");
     } static void  write(double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
 
     }
     static void  write(String []s) {

@@ -22,7 +22,7 @@ import java.util.*;
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see https://www.gnu.org/licenses/.
  * */
-public class nyearplan {
+public class nyearEPL {
     static final int flow=0,cap=1,dep=2,targ=3;
     static String [][] rowheads = new String[4][1];
     static String [][]colheads = new String[4][1];
@@ -42,7 +42,7 @@ public class nyearplan {
     }
     public static void main(String [] args)throws Exception {
         if (args.length !=4 ) {
-            System.err.println("Usage java planning.nyearplan flowmatrix.csv capitalmatrix.csv depreciationmatrix.csv laboursupplyandtargets.csv");
+            System.err.println("Usage java planning.nyearEPL flowmatrix.csv capitalmatrix.csv depreciationmatrix.csv laboursupplyandtargets.csv");
         } else {
             csvfilereader flowread,capread,depread,labtargread;
             flowread=new csvfilereader(args[flow]);
@@ -94,32 +94,43 @@ public class nyearplan {
             int years = countyears(rowheads[targ]);
             maxprod=colheads[flow].length-1;
             int year;
-            System.out.println(maximiser(years));
-            for (year=1; year<=years; year++) {
+            // System.out.println(maximiser(years));
+            System.out.println("Target(");
+            for (year=1; year<=years; year++)
                 // set a target fiven by leontief demand for year
-                System.out.println(targeqn(year));
+                System.out.println(targeqn(year)+(year<years?",":");\n"));
+
+            for (year=1; year<=years; year++) {
+
                 System.out.println(labourtotal(year));
                 // now print out labour supply constraint
-                System.out.println(namelabourfor(year)+"\t<=\t" +matrices[targ][year][labourRow()]+";");;
+                System.out.println("Resource "+namelabourfor(year)+"\t " +matrices[targ][year][labourRow()]+";");
                 for(int product=1; product<=maxprod; product++) {
+                    // iterate through all the things to be produced
+                    System.out.print("\nTechnique[");
+                    for(int stock =1; stock<=maxprod; stock++) {
+                        String eq=outputequationfor(product,stock,year);                   
+                        String eq2 = flowconstraintfor(product,stock,year);                                                  
+                           if(!((eq+eq2).equals(""))) System.out.println(eq+" "+eq2+(stock<maxprod?" ":""));                
+                    }
+                    System.out.println(labourconstraintfor(product,year)+"]-> "+outputs[product]+" "+nameoutput(product,year)+";\n");
+
 
                     for(int stock =1; stock<=maxprod; stock++) {
-                        String eq=outputequationfor(product,stock,year);
-                        if(eq !="")System.out.println(eq);
-                        eq = flowconstraintfor(product,stock,year);
-                        if(eq !="")System.out.println(eq);
-                        System.out.println(namedep(product,stock,year)+" =\t"+matrices[dep][stock][product]+" "+namecap(product,stock,year)+";");
+                        //  System.out.println(namedep(product,stock,year)+" =\t"+matrices[dep][stock][product]+" "+namecap(product,stock,year)+";");
                         if (year>1) {
                             System.out.println(accumulationconstraint(product,stock,year));
                         } else { // set initial capital stocks
-                            System.out.println(namecap(product,stock,year)+"\t<=\t"+ matrices[cap][stock][product]+";");
+                            if(matrices[cap][stock][product]>0)
+                               for (int y=year;y<=years;y++)
+                                System.out.println("Resource "+namecap(product,stock,y)+"\t \t"+
+                                (Math.pow( 1-matrices[dep][stock][product],y-1)*matrices[cap][stock][product])+";");
                         }
                     }
-                    System.out.println(labourconstraintfor(product,year));
-                    System.out.println(accumulationtotal(product,year));
-                    System.out.println(productiveconsumption(product,year));
-                    System.out.println(nameconsumption(product,year)+"\t<=\t"+ nameoutput(product,year) + " - "+nameaccumulation(product,year)+
-                                       "-"+nameproductiveconsumption(product,year)+";");
+                    // System.out.println(labourconstraintfor(product,year));
+                    // System.out.println(accumulationtotal(product,year));
+                    //  System.out.println(productiveconsumption(product,year));
+                    // System.out.println(nameconsumption(product,year)+"\t<=\t"+ nameoutput(product,year) + " - "+nameaccumulation(product,year)+                                       "-"+nameproductiveconsumption(product,year)+";");
                 }
             }
         }
@@ -138,7 +149,7 @@ public class nyearplan {
 
         String s= "";
         for (int i=1; i<=maxprod; i++)if(matrices[targ][year][i]>0)s= s +
-                        nametarget(year)+" <=\t"+( 1/matrices[targ][year][i] )+ " "+nameconsumption(i,year)+";\n";
+                        +( matrices[targ][year][i] )+ " "+nameconsumption(i,year)+(i<maxprod?",\n":" ");
         return s ;
     }
     static String productiveconsumption(int product, int year) {
@@ -152,9 +163,9 @@ public class nyearplan {
         return s+";";
     }
     static String labourtotal(  int year) {
-        String s=namelabourfor( year)+"\t>=\t"+namelabourfor(1, year);
-        for (int i=2; i<=maxprod; i++)s= s +" +\t"  +namelabourfor(i, year);
-        return s+";";
+        String s="";
+        for (int i=1; i<=maxprod; i++)s+= "\nTechnique[ 1 "+namelabourfor( year)+"\t]->\t 1 "+namelabourfor(i, year) +";\n";
+        return s;
     }
     static int outputrowinheaders()throws Exception {
         int i;
@@ -169,26 +180,26 @@ public class nyearplan {
         throw new Exception("No labour row in flow matrix");
     }
     static String flowconstraintfor(int product, int input, int year) {
-        String s=nameoutput(product,year)+"\t<=\t";
+        String s="";
         if(matrices[flow][input][product]!=0.0) {
-            s=s+ (outputs[product]/matrices[flow][input][product])+" "+nameflow(product,input,year)+";";
+            s=s+ (matrices[flow][input][product])+" "+nameflow(product,input,year)+" ";
         } else {
             s="";
         }
         return s;
     }
     static String outputequationfor(int product,int stock, int year) {
-        String s=nameoutput(product,year)+"\t<=\t";
+        String s="";
         if(matrices[cap][stock][product]!=0.0) {
-            s=s+ (outputs[product]/matrices[cap][stock][product])+" "+namecap(product,stock,year)+";";
+            s=s+ (matrices[cap][stock][product])+" "+namecap(product,stock,year)+" ";
         } else {
             s="";
         }
         return s;
     }
     static String labourconstraintfor(int product,  int year)throws Exception {
-        String s=nameoutput(product,year)+"\t<=\t";
-        s=s+(outputs[product]/labour[product])+ " "+namelabourfor(product,year)+";";
+        String s="";
+        s=s+(labour[product])+ " "+namelabourfor(product,year)+" ";
         if(outputs[product]==0.0)s="";
         return s;
     }

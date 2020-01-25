@@ -1,7 +1,9 @@
 package planning;
+/** class to hold csv files after they have been read in as a two D linke list */
 public class pcsv {
     pcsv right;
     celltype tag;
+    /** prints out the tree in csv format */
     public String toString() {
         return tag.toString()+
                (right==null?"":

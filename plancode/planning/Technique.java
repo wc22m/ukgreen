@@ -6,12 +6,12 @@ import java.util.*;
   of the sparse character of large io tables.
   <p>
        Copyright (C) 2018 William Paul Cockshott
-
+<p>
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
        the Free Software Foundation, either version 3 of the License, or
        (at your option) any later version.
-
+<p>
        This program is distributed in the hope that it will be useful,
        but WITHOUT ANY WARRANTY; without even the implied warranty of
        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -76,6 +76,7 @@ public class Technique {
     public String getIdentifier() {
         return identifier;
     }
+    /** gives string representation of the the technique */
     public String toString() {
         return  "Technique{"+identifier+","+productCode+","+grossOutput
                 +",\n"+  Arrays.toString(inputUsage)+",\n"+

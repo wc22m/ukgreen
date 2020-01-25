@@ -7,24 +7,23 @@ import java.nio.file.Paths;
 import java.nio.file.Path;
 /** This parses csv files meeting the official UK standard for such files at https://www.ofgem.gov.uk/sites/default/files/docs/2013/01/csvfileformatspecif(ication.pdf
 <p>
-   Copyright (C) 2018 William Paul Cockshott
+  * Copyright (C) 2018 William Paul Cockshott
 
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see https://www.gnu.org/licenses/.
    * */
 
-public
-class csvfilereader {
+public class csvfilereader {
 
     static final int textlen=80;
 
@@ -45,6 +44,31 @@ class csvfilereader {
     }
     /** returns null for file that can not be opened, otherwise
      returns pointer to tree of csvcells. */
+
+    public pcsv parsecsvfile(  ) {
+        initialise();
+        /* open file for reading*/
+        try {
+            Path path = Paths.get(theFilename);
+
+            if(Files.notExists(path))throw new Exception("file does not exist "+path);
+            char[] cb= new char[(int)Files.size(path)];
+            Charset ascii=	Charset.availableCharsets().get("US-ASCII");
+            //  System.out.println("use path "+path);
+            BufferedReader rr=new BufferedReader( new FileReader(theFilename));
+            rr.read(cb,0,cb.length);
+            bp=cb;
+            currentchar = 0;
+            /** We now have the csv file in memory - parse it */
+            parsewholefile();
+            removetrailingnull(firstrecord);
+            return firstrecord;
+        } catch(Exception e) {
+            System.err.println("in parsecsvfile "+e);
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 
     static final int FD=34, /* field delimitor */
@@ -74,8 +98,9 @@ class csvfilereader {
             recursedown(j+1,((linestart)q.tag) .down,m);
         }
     };
-    double[][] getdatamatrix(pcsv p)
+
     /** extract the data as matrix of doubles */
+    public double[][] getdatamatrix(pcsv p)
     {
         double [][]m;
         if( p== null ) {
@@ -97,9 +122,9 @@ class csvfilereader {
             recursegch(i+1,q .right,h);
         }
     };
-
+    /** extract the column headers */
     public  String[] getcolheaders( pcsv p) {
-        /** extract the column headers */
+
 
         String[] h ;
         if( p== null ) {
@@ -123,9 +148,11 @@ class csvfilereader {
     }
 
     Hashtable<pcsv,String[]>rowheaders =new Hashtable<pcsv,String[]>();
+    /** a table to remember all col headers by parse tree */
     Hashtable<pcsv,String[]>colheaders =new Hashtable<pcsv,String[]>();
-    String[] getrowheaders(pcsv p ) {
-        /** extract the rows headers */
+
+    /** extract the rows headers */
+    public String[] getrowheaders(pcsv p ) {
         int M,i ;
         String[] h ;
         if( p== null ) {
@@ -141,8 +168,9 @@ class csvfilereader {
             return rowheaders.get(p);
         }
     };
-    int colcount(pcsv p )
+
     /** return the number of columns in the spreadsheet */
+    public int colcount(pcsv p )
     {
         if( p == null ) {
             return 0;
@@ -153,8 +181,8 @@ class csvfilereader {
         return 0;
     }
 
-    pcsv getcell(pcsv p,int row, int col )
     /** return the cell at position row,col in the spreadsheet, origin on top right is position 1,1*/
+    public pcsv getcell(pcsv p,int row, int col )
     {
         if( p== null ) {
             return null;
@@ -170,8 +198,9 @@ class csvfilereader {
             return getcell(((linestart)(p.tag)) .down,row-1,col);
         }
     };
-    pcsv getline(pcsv p,int row  )
+
     /** return the cell at position row,col in the spreadsheet, origin on top right is position 1,1*/
+    public pcsv getline(pcsv p,int row  )
     {
         if( p== null ) {
             return null;
@@ -206,7 +235,8 @@ class csvfilereader {
         i = (long)(r);
         return (i*1.0)==r;
     }
-    void printcsv(PrintWriter f,pcsv p ) {
+    /** print the parse tree out as a csv file */
+    public void printcsv(PrintWriter f,pcsv p ) {
         if( p != null ) {
             if( p.tag instanceof linestart ) {
                 printcsv(f,p.right);
@@ -410,30 +440,7 @@ class csvfilereader {
         tokstart,tokend,currentchar ;
     pcsv firstfield,lastfield,firstrecord;
     String theFilename;
-    pcsv parsecsvfile(  ) {
-        initialise();
-        /* open file for reading*/
-        try {
-            Path path = Paths.get(theFilename);
-
-            if(Files.notExists(path))throw new Exception("file does not exist "+path);
-            char[] cb= new char[(int)Files.size(path)];
-            Charset ascii=	Charset.availableCharsets().get("US-ASCII");
-            //  System.out.println("use path "+path);
-            BufferedReader rr=new BufferedReader( new FileReader(theFilename));
-            rr.read(cb,0,cb.length);
-            bp=cb;
-            currentchar = 0;
-            /** We now have the csv file in memory - parse it */
-            parsewholefile();
-            removetrailingnull(firstrecord);
-            return firstrecord;
-        } catch(Exception e) {
-            System.err.println("in parsecsvfile "+e);
-            e.printStackTrace();
-            return null;
-        }
-    }
+    /** creates the reader assigned to file fn but does not do any reading until parser is called */
     public csvfilereader(String fn) {
         int i;
         theFilename=fn;

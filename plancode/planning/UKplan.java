@@ -114,12 +114,12 @@ public class UKplan {
                 // set a target fiven by leontief demand for year
                 System.out.println(targeqn(year));
                 System.out.println(labourtotal(year));
-                
+
                 // now print out labour supply constraint
                 int targlab = findinheaders("LABOUR",colheads[targ]);
                 int targdeficit =findinheaders("TRADEDEFICIT",colheads[targ]);
                 System.out.println(namelabourfor(year)+"\t<=\t" +matrices[targ][year][targlab]+";");
-                
+
                 System.out.println("/* trade deficit constraint */\n"+matrices[targ][year][targdeficit]+">="+nameimport(year)+"-"+nameexport(year)+";");
                 for(int product=1; product<=maxprod; product++) {
 
@@ -174,25 +174,25 @@ public class UKplan {
         int publiccons = findinheaders("PUBLICSECTOR",colheads[flow]);
         if(publiccons<0)throw new Exception("could not find indes of PUBLICSECTOR");
         for (int i=1; i<=maxprod; i++) s= s +
-                                              nametarget(year)+" <=\t"+( 1/(matrices[flow][privatecons][i]+matrices[flow][publiccons][i]) )+ " "+nameconsumption(i,year)+";\n";
+                                              nametarget(year)+" <=\t"+( 1/(matrices[flow][i][privatecons]+matrices[flow][i][publiccons]) )+ " "+nameconsumption(i,year)+";\n";
         return s ;
     }
     static String productiveconsumption(int product, int year) {
         String s=nameproductiveconsumption(product,year)+"\t>=\t"+nameflow(1,product,year);
         for (int i=2; i<=maxprod; i++)
-         if(matrices[flow][i ][product]>0)s= s +"\n\t +\t"  +nameflow(i,product,year);
+            if(matrices[flow][i ][product]>0)s= s +"\n\t +\t"  +nameflow(i,product,year);
         return s+";";
     }
     static String accumulationtotal(int product, int year) {
         String s=nameaccumulation(product,year)+"\t>=\t"+nameaccumulation(1,product,year);
         for (int i=2; i<=maxprod; i++)
-        if(matrices[cap][i ][product]>0)s= s +" \n\t+\t"  +nameaccumulation(i,product,year);
+            if(matrices[cap][i ][product]>0)s= s +" \n\t+\t"  +nameaccumulation(i,product,year);
         return s+";";
     }
     static String importtotal(int product, int year) {
         String s=nameimport(product,year)+"\t>=\t"+nameimport(1,product,year);
         for (int i=2; i<=lastimportrow; i++)
-         if(matrices[imports][i ][product]>0)s= s +" \n\t+\t"  +nameimport(i,product,year);
+            if(matrices[imports][i ][product]>0)s= s +" \n\t+\t"  +nameimport(i,product,year);
         return s+";";
     }
     static String importtotal(  int year) {
@@ -226,7 +226,7 @@ public class UKplan {
         String s=nameoutput(product,year)+"\t<=\n\t";
         if(matrices[flow][input][product]!=0.0) {
             if(input<lastimportrow) {
-				double ratio = (outputs[product]/(matrices[flow][input][product]+matrices[imports][input][product]));
+                double ratio = (outputs[product]/(matrices[flow][input][product]+matrices[imports][input][product]));
                 s=s+ ratio +
                   " "+nameflow(product,input,year)+"\n\t+"+ratio +" "+nameimport(product,input,year)+";";
             }
@@ -264,7 +264,7 @@ public class UKplan {
         return "outputOf"+tidy(colheads[flow][product])+"_Yr"+year;
     }
     static String accumulationconstraint(int product, int input, int year) {
-	 if(matrices[cap][input][product]==0.0) return "";
+        if(matrices[cap][input][product]==0.0) return "";
         String s=namecap(product,input,year)+"\t<=\t";
         s=s+ namecap(product,input,year-1)+" + "+ nameaccumulation(product,input,year-1)+" -\t"+namedep(product,input,year-1);
         return s+";";

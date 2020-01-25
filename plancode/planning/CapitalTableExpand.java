@@ -1,11 +1,13 @@
-/* Programme to read in the capital stock matrix produced by stock formatter
+/** Programme to read in the capital stock matrix produced by stock formatter
 along with a second file that relabels io table columns with the categories
 used in the stock matrix and a third file that gives the value of final output
-values. It then produces and expanded stock matrix on standard out such that
+values.
+*
+* <p>It then produces and expanded stock matrix on standard out such that
 for each column in the original stock matrix for which several sub industries
 exist in the io table the capital values in the original are spread among the
 new multiple columns in proportion to their share in the final output of this
-group of industries.
+group of industries.<p>
 The final output matrix should have column names in the same order as the final
 output table
 */

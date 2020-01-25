@@ -1,4 +1,4 @@
-// computes labour value of outputs of industries plus prices of production
+/** computes labour value of outputs of industries plus prices of production */
 package planning;
 import java.io.*;
 import java.util.*;
@@ -84,7 +84,7 @@ class LabVal {
             printResult(ioheaders,"production price of final output including imputed pp of imports",finaloutputaspp);
         }
     }
-    // print result
+    /** print results on the standard output */
     static void printResult(String[] ioheaders,String iorowname, double[] datavec) {
         String q="\"";
         String comma=",";
