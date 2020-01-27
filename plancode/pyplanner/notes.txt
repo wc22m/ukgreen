@@ -1,0 +1,2 @@
+For the time being these python scripts are only quick translations of the Java 
+source codes, they cannot be run yet
