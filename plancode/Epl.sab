@@ -1,0 +1,74 @@
+/*
+ EPL
+ 
+Languge for specifying economic plans
+*/
+
+
+
+
+Package Epl;
+ 
+Helpers
+  letter = [['A'..'Z']+['a'..'z']];
+  digit = ['0'..'9'];
+  ubar='_';
+  alphanum = [letter+['0'..'9']]|ubar;
+  cr = 13;
+  lf = 10;
+  tab = 9;
+    digit_sequence = digit+;
+    fractional_constant = digit_sequence? '.' digit_sequence | digit_sequence '.';
+    sign = '+' | '-';
+    exponent_part = ('e' | 'E') sign? digit_sequence;
+    floating_suffix = 'f' | 'F' | 'l' | 'L';
+  eol = cr lf | cr | lf;        // This takes care of different platforms
+  not_cr_lf = [[32..127] - [cr + lf]];
+  exponent = ('e'|'E');
+  quote = ''';
+  
+  all =[0..127];
+  schar = [all-'''];
+  not_star = [all - '*'];
+  not_star_slash = [not_star - '/'];
+  not_star_ket =[not_star -')'];
+
+
+
+/* The tokens section defines the terminal symbols of the grammar.*/
+Tokens
+  floating_constant =  fractional_constant exponent_part? floating_suffix? |
+        digit_sequence exponent_part floating_suffix?|digit_sequence;
+ tech='Technique';
+res='Resource';
+targ='Target';
+bra='[';
+ket=']';
+semicolon=';';
+arrow='->';
+
+/*  identifiers come after reserved words in the grammar */
+ identifier = letter alphanum*;  
+ blank = (' '|cr|lf|tab)+;
+ comment = '/*' not_star* '*'+ (not_star_slash not_star* '*'+)* '/';
+ codecomment = '(*' not_star* '*'+ (not_star_ket not_star* '*'+)* ')';
+
+Ignored Tokens 
+	blank,comment;
+ 
+Productions
+ program =statementlist;
+ bralist= bra list ket;
+ list = head atom*;
+ head =atom;
+ atom = floating_constant identifier;
+ target = targ bralist;
+ resource = res atom;
+ technique = tech identifier bralist arrow product;
+ product= producttail;
+ producttail = atom |{joint}bralist;
+ statement = {resstat}resource|{techstat}technique|{targstat}target;
+ statementlist 	= statement semicolon statements*;
+ statements 	= statement  semicolon;
+
+
