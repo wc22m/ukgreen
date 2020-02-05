@@ -95,23 +95,26 @@ public class nyearEPL {
             maxprod=colheads[flow].length-1;
             int year;
             // System.out.println(maximiser(years));
-            System.out.println("Target(");
+            System.out.print("Target[");
             for (year=1; year<=years; year++)
                 // set a target fiven by leontief demand for year
-                System.out.println(targeqn(year)+(year<years?",":");\n"));
-
+                System.out.print(targeqn(year)+(year<years?" ":"];\n"));
+            System.out.println(" ");
+            for (year=1; year<=years; year++)
+                // set technique to produce the final outputs for all products in target list
+                System.out.println(targtech(year));
             for (year=1; year<=years; year++) {
 
                 System.out.println(labourtotal(year));
                 // now print out labour supply constraint
-                System.out.println("Resource "+namelabourfor(year)+"\t " +matrices[targ][year][labourRow()]+";");
+                System.out.println("Resource "+"\t " +matrices[targ][year][labourRow()]+"\t"+namelabourfor(year)+";");
                 for(int product=1; product<=maxprod; product++) {
                     // iterate through all the things to be produced
-                    System.out.print("\nTechnique[");
+                    System.out.print("\nTechnique t"+nameoutput(product,year)+"[");
                     for(int stock =1; stock<=maxprod; stock++) {
-                        String eq=outputequationfor(product,stock,year);                   
-                        String eq2 = flowconstraintfor(product,stock,year);                                                  
-                           if(!((eq+eq2).equals(""))) System.out.println(eq+" "+eq2+(stock<maxprod?" ":""));                
+                        String eq=outputequationfor(product,stock,year);
+                        String eq2 = flowconstraintfor(product,stock,year);
+                        if(!((eq+eq2).equals(""))) System.out.print(eq+" "+eq2+(stock<maxprod?" ":""));
                     }
                     System.out.println(labourconstraintfor(product,year)+"]-> "+outputs[product]+" "+nameoutput(product,year)+";\n");
 
@@ -119,12 +122,60 @@ public class nyearEPL {
                     for(int stock =1; stock<=maxprod; stock++) {
                         //  System.out.println(namedep(product,stock,year)+" =\t"+matrices[dep][stock][product]+" "+namecap(product,stock,year)+";");
                         if (year>1) {
-                            System.out.println(accumulationconstraint(product,stock,year));
+                            if(matrices[cap][stock][product]>0)
+                            {
+                                if (year == years)
+                                {
+                                    System.out.println("Technique A"+namecap(product,stock,year)+
+                                                       "of"+nameoutput(stock,year-1)+"[1 "+
+                                                       nameoutput(stock,year-1)+"]->1 "+namecap(product,stock,year)+";");
+                                }
+                                else
+                                {   double [] coproduction= new double[years-year+1];
+                                    for (int k=0; k<coproduction.length; k++)
+                                        coproduction[k]=Math.pow(1-matrices[dep][stock][product],k);// depreciate added on capital stock in future years
+                                    String s ="Technique A"+namecap(product,stock,year)+
+                                              "of"+nameoutput(stock,year-1)+"[1 "+
+                                              nameoutput(stock,year-1)+"]->[";
+                                    for (int k=0; k<coproduction.length; k++)
+                                    {
+                                        s+=coproduction[k];
+                                        s+=" ";
+                                        s+=namecap(product,stock,k+year)+" ";
+                                    }
+                                    System.out.println(s+"];");
+                                }
+                                /*   //  System.out.println(accumulationconstraint(product,stock,year,years)+"\n");
+                                    String s="Technique "+nameaccumulation(product,input,year)+"[1 "+nameoutput(input,year-1)+"]->\t1 "+nameaccumulation(product,input,year)+";\n";
+                                s+="Technique "+namecap(product,input,year)+"[1 "+nameaccumulation(product,input,year)+"]->[";
+                                for (int y=year; y<=years; y++)
+                                s=s+" "+Math.pow(1-matrices[dep][input][product],y-year)+" "+namecap(product,input,y);
+                                //     s=s+ namecap(product,input,year-1)+" + "+ nameaccumulation(product,input,year-1)+" -\t"+namedep(product,input,year-1);
+                                 println(s+"];");*/
+                            }
+                            /*
+                             * if (year == years-1) {
+                            // penultimate year gets a simple technique
+                            //   writeln("i"+i);writeln("capnumtoflownum[i]"+capnumtoflownum[i]);writeln("flownum(capnumtoflownum[i],year)"+flownum(capnumtoflownum[i],year));
+                            Technique t=new Technique ("A"+C.productIds[mainoutput]+"of"+C.productIds[codes[0]], mainoutput,grossout,   usage, codes);
+                            C.addTechnique(t);
+                            } else {
+                            // other years get a joint production method
+                            double [] coproduction= new double[years-year-1];
+                            int [] cocodes= new int[years-year-1];
+                            for (int k=0; k<cocodes.length; k++) {
+                                cocodes[k]=capnum(i,year+k+2,caps);
+                                coproduction[k]=Math.pow(1-deprate(i),k+1);// depreciate added on capital stock in future years
+                            }
+                            Technique t=new JointProductionTechnique("A"+C.productIds[mainoutput]+"of"+C.productIds[codes[0]],mainoutput,grossout,usage,codes,coproduction,cocodes);
+                            C.addTechnique(t);
+                            }
+                             */
                         } else { // set initial capital stocks
                             if(matrices[cap][stock][product]>0)
-                               for (int y=year;y<=years;y++)
-                                System.out.println("Resource "+namecap(product,stock,y)+"\t \t"+
-                                (Math.pow( 1-matrices[dep][stock][product],y-1)*matrices[cap][stock][product])+";");
+                                for (int y=year; y<=years; y++)
+                                    System.out.println("Resource \t"+
+                                                       (Math.pow( 1-matrices[dep][stock][product],y-1)*matrices[cap][stock][product])+"\t \t"+namecap(product,stock,y)+";");
                         }
                     }
                     // System.out.println(labourconstraintfor(product,year));
@@ -149,7 +200,14 @@ public class nyearEPL {
 
         String s= "";
         for (int i=1; i<=maxprod; i++)if(matrices[targ][year][i]>0)s= s +
-                        +( matrices[targ][year][i] )+ " "+nameconsumption(i,year)+(i<maxprod?",\n":" ");
+                        +( matrices[targ][year][i] )+ " "+nameconsumption(i,year)+(i<maxprod?" ":" ");
+        return s ;
+    }
+    static String targtech(int year) {
+
+        String s= "";
+        //  for (int i=1; i<=maxprod; i++)if(matrices[targ][year][i]>0)s= s +"Technique[1 "
+        //                 +( nameoutput(i,year) )+ "]-> \t1 "+nameconsumption(i,year)+(";\n");
         return s ;
     }
     static String productiveconsumption(int product, int year) {
@@ -164,7 +222,7 @@ public class nyearEPL {
     }
     static String labourtotal(  int year) {
         String s="";
-        for (int i=1; i<=maxprod; i++)s+= "\nTechnique[ 1 "+namelabourfor( year)+"\t]->\t 1 "+namelabourfor(i, year) +";\n";
+//       for (int i=1; i<=maxprod; i++)s+= "\nTechnique[ 1 "+namelabourfor( year)+"\t]->\t 1 "+namelabourfor(i, year) +";\n";
         return s;
     }
     static int outputrowinheaders()throws Exception {
@@ -199,7 +257,7 @@ public class nyearEPL {
     }
     static String labourconstraintfor(int product,  int year)throws Exception {
         String s="";
-        s=s+(labour[product])+ " "+namelabourfor(product,year)+" ";
+        s=s+(labour[product])+ " "+namelabourfor(year)+" ";
         if(outputs[product]==0.0)s="";
         return s;
     }
@@ -210,22 +268,17 @@ public class nyearEPL {
         return "labourForYear"+ year;
     }
     static String nameoutput(int product, int year) {
-        return "outputOf"+colheads[flow][product]+year;
-    }
-    static String accumulationconstraint(int product, int input, int year) {
-        String s=namecap(product,input,year)+"\t<=\t";
-        s=s+ namecap(product,input,year-1)+" + "+ nameaccumulation(product,input,year-1)+" -\t"+namedep(product,input,year-1);
-        return s+";";
+        return /*"outputOf"+*/colheads[flow][product]+year;
     }
     static String nameaccumulation(int product, int input, int year) {
         //   System.out.println("acc "+product+ ","+input+","+year);
-        return "accumulationFor"+colheads[flow][product]+"Of"+colheads[flow][input]+year;
+        return "AC"+colheads[flow][product]+"Of"+colheads[flow][input]+year;
     }
     static String nameaccumulation(int product,   int year) {
-        return "accumulationOf"+colheads[flow][product]+year  ;
+        return "A"+colheads[flow][product]+year  ;
     }
     static String nameconsumption(int product,   int year) {
-        return "finalConsumptionOf"+colheads[flow][product]+year  ;
+        return colheads[flow][product]+year  ;
     }
     static String nametarget(int year) {
         return "targetFulfillmentForYear"+year;
@@ -234,13 +287,14 @@ public class nyearEPL {
         return "productiveConsumptionOf"+colheads[flow][product]+year  ;
     }
     static String nameflow(int product, int input, int year) {
-        return "flowFor"+colheads[flow][product]+"Of"+colheads[flow][input]+year;
+        return nameoutput(input,year);
+        //   return "flowFor"+colheads[flow][product]+"Of"+colheads[flow][input]+year;
     }
     static String namedep(int product, int input, int year) {
-        return "depreciationIn"+colheads[flow][product]+"ProductionOf"+colheads[flow][input]+year;
+        return "depreciationIn"+colheads[flow][product]+"of"+colheads[flow][input]+year;
     }
     static String namecap(int product, int input, int year) {
-        return "capitalstockFor"+colheads[flow][product]+"MadeUpOf"+colheads[flow][input]+year;
+        return "C_"+input+"_"+product+"yr"+/*colheads[flow][input]+*/year;
     }
 
     static int countyears(String[]heads) {

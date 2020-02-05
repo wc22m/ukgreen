@@ -8,12 +8,12 @@ import java.util.*;
  *
  * <p>
     Copyright (C) 2018 William Paul Cockshott
-<p>
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-<p>
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -21,10 +21,10 @@ import java.util.*;
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see https://www.gnu.org/licenses/.
-    *
+    * 
  * */
 public class nyearHarmony extends nyearplan {
-
+	
     static int years;
     static   TechnologyComplex C ;
     static int[][] relativecapnum;// since the matrix is sparse we allocate a distinct product
@@ -142,7 +142,7 @@ public class nyearHarmony extends nyearplan {
                 }
                 // now add a joint production technique for each type of capital accumulation except for the last year
                 if(year<years) {
-                    for(int i=0; i<caps ; i++) {
+                    for(int i=0; i<caps ; i++) { 
                         double [] usage = {1};// one unit of an input produces one unit of acc in next year
                         int  [] codes =  {flownum(capnumtoflownum[i],year)};// always uses current product for this year
                         int mainoutput=capnum(i,year+1,caps);
@@ -207,11 +207,11 @@ public class nyearHarmony extends nyearplan {
                     targets[flownum(j,y)]=matrices[targ][y][j];
             if( Harmonizer.verbose)
                 writeln(C.allheadings());
-            long start = System.currentTimeMillis();
+                long start = System.currentTimeMillis();
             double [] intensities= Harmonizer.balancePlan(   C, targets,  initialResource   );
-            long stop= System.currentTimeMillis();
+             long stop= System.currentTimeMillis();
             printResults(C, intensities, initialResource);
-            writeln("took "+((stop-start)*0.001)+" sec");
+			writeln("took "+((stop-start)*0.001)+" sec");
         }
     }
 
@@ -221,13 +221,13 @@ public class nyearHarmony extends nyearplan {
         writeln("iter,	useweight,	phase2,	temp");
         writeln(" "+Harmonizer.iters+","+Harmonizer.useweight+","+Harmonizer.phase2adjust+","+Harmonizer.startingtemp);
         write("year");
-        writeln(colheads[flow]);
+        writeln(colheads[flow]); 
         double toth=0;
-
-        for(int year=1; year<=years; year++) {
-            double []usage = new double [maxprod+1];
-            double []produced = new double [maxprod+1];
-
+       
+        for(int year=1; year<=years; year++) { 
+			double []usage = new double [maxprod+1];
+			double []produced = new double [maxprod+1];
+			
             writeln(""+year+",flow matrix");
             for(int row=1; row<=outputrowinheaders(); row++) {
                 write(""+year);
@@ -236,24 +236,18 @@ public class nyearHarmony extends nyearplan {
                     int index = yearXproductIntensityIndex[year][col];
                     double howmuch = intensity[index]*matrices[flow][row][col];
                     write(","+howmuch);
-                    if(row<=maxprod) {
-                        usage [row]+= howmuch ;
-                    }
-                    else
-                    {
-                        produced [col]=howmuch;
-                    }
+                    if(row<=maxprod){usage [row]+= howmuch ;}else
+                    {produced [col]=howmuch;}
                 }
                 writeln("");
             }
-
+ 
             write(""+year+",");
             write("productive consumption  ");
             for(int col=1; col<usage.length; col++) {
                 write (","+usage[col]);
-            }
-            writeln("");
-            write(""+year+",");
+            } writeln("");
+              write(""+year+",");
             write("accumulation ");
             for(int col=1; col<usage.length; col++) {
                 write (","+(produced[col]-netoutput[flownum(col,year)]-usage[col]));
@@ -299,10 +293,10 @@ public class nyearHarmony extends nyearplan {
             }
             writeln("");
         }
-        for(int i=0; i<C.techniques.size(); i++) {
-            Technique t = C.techniques.elementAt(i);
-            writeln(t.identifier+"="+t.grossOutput*intensity[i]);
-        }
+        for(int i=0;i<C.techniques.size();i++){
+			Technique t = C.techniques.elementAt(i);
+			writeln(t.identifier+"="+t.grossOutput*intensity[i]);
+		}
         writeln("totalharmony ,"+toth);
     }
     static double deprate(int capitaltype)// capitaltype is the compressed capital index
@@ -352,14 +346,14 @@ public class nyearHarmony extends nyearplan {
         writeln("");
     }
     static void  writeln(double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
         writeln("");
     }
     static void  writeln(String []s) {
-        for(int i=0; i<s.length; i++)System.out.printf(",\""+s[i]+"\"");
+        for(int i=0; i<s.length; i++)System.out.printf(","+s[i]);
         writeln("");
     } static void  write(double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
 
     }
     static void  write(String []s) {

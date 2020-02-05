@@ -6,12 +6,12 @@ import java.util.*;
   of the sparse character of large io tables.
   <p>
        Copyright (C) 2018 William Paul Cockshott
-<p>
+
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
        the Free Software Foundation, either version 3 of the License, or
        (at your option) any later version.
-<p>
+
        This program is distributed in the hope that it will be useful,
        but WITHOUT ANY WARRANTY; without even the implied warranty of
        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -47,8 +47,24 @@ public class Technique {
         for(int j=0; j< inputCodes.length; j++) {
             cost+=derivativeOfProductHarmony[ inputCodes[j]]* inputUsage[j];
         }
-        //    System.out.println(identifier+","+productCode+","+gain+","+cost+","+((gain-cost)/cost ));
+    //    System.out.println(identifier+","+productCode+","+gain+","+cost+","+((gain-cost)/cost ));
         return (gain-cost)/cost;
+    }
+      /** generates a string representation that is parsable by the Eplc compiler
+     * this requires the use of C a technology complex to give the string ids
+     * of the parameters to the input and outputs */
+    public String toString(TechnologyComplex C) {
+        return head(C)+tail(C);
+    }
+    String head(TechnologyComplex C) {
+        String s = "Technique "+identifier+"[";
+        for (int i=0; i<inputUsage.length; i++)
+            s+= " "+inputUsage[i]+" "+C.productIds[inputCodes[i]];
+        return s+"]->";
+    }
+    String tail(TechnologyComplex C) {
+        return " "+grossOutput+" "+
+               C.productIds[productCode];
     }
     static int findiIna(int i, int[] a) {
         for (int j=0; j<a.length; j++)if(a[j]==i)return j;
@@ -76,7 +92,6 @@ public class Technique {
     public String getIdentifier() {
         return identifier;
     }
-    /** gives string representation of the the technique */
     public String toString() {
         return  "Technique{"+identifier+","+productCode+","+grossOutput
                 +",\n"+  Arrays.toString(inputUsage)+",\n"+

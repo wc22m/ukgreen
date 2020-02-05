@@ -8,7 +8,7 @@ a Kantorovich style output target and having a pregiven set of initial resources
  *  Class to provide optimisation of plans using the algorithm in Towards a New Socialism
  * <p>
     Copyright (C) 2018 William Paul Cockshott
-<p>
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -22,27 +22,26 @@ a Kantorovich style output target and having a pregiven set of initial resources
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see https://www.gnu.org/licenses/.
  * */
-public class Harmonizer {
-    static final double useweight = 5;
-    static final double phase2adjust = 0.4 ;
+public class Harmonizer { 
+    static final double useweight = 6;
+    
+    static final double phase2adjust = 0.8 ;
     static final double capacitytarget=0.98;
+    static final double growfactor =1.03;
     static final double startingtemp=0.23;
     static double meanh=0;
     static boolean phase1rescale=true;
     static boolean phase2rescale=true;
-    static int iters=100;
+    static boolean simpleequalisation =  false ;
+    static int iters=80;
     static boolean verbose=false;
     static double [] productHarmony= {};
     /** C is a technology complex, fixed resources should be added as nonproduced products<p>
      * planTargets is the target output of each product<p>
      * returns a vector of technology intensities*/
     public static double [] balancePlan(TechnologyComplex C, double[] planTargets, double [] initialresource )throws Exception {
-        if (verbose) {
-            writeln("balancePlan");
-            write("plan targets");
-            writeln(planTargets);
-            write("initial resources");
-            writeln( initialresource);
+		if (verbose){
+         writeln("balancePlan");writeln(planTargets);writeln( initialresource);
         };
         if(planTargets.length != C.productCount())
             throw new InconsistentScale(
@@ -51,10 +50,7 @@ public class Harmonizer {
         Vector< Vector<Integer>> producerIndex=C.buildProducerIndex();
         double [] intensity = new double[C.techniqueCount()];
         initialiseIntensities(intensity,C,initialresource);
-        if(verbose) {
-            System.out.print("initialised intensity");
-            writeln(intensity);
-        }
+        if(verbose){System.out.print("initialised intensity");writeln(intensity);}
         double t=startingtemp;
         productHarmony=new double[C.productCount()];
         for(int i=0; i<iters; i++) {
@@ -80,10 +76,9 @@ public class Harmonizer {
                 printstate(  intensity,  C,  initialresource,   planTargets);
         }
         return intensity;
-    }
-    /** compute the derivatives of the harmonies of all products with repect to marginal increase in output in terms of
+    }/** compute the derivatives of the harmonies of all products with repect to marginal increase in output in terms of
     actual output units not intensities */
-    public static  double []  computeHarmonyDerivatives(double[] netOutput,double[] planTargets,TechnologyComplex C,double[] intentsity ) {
+    static  double []  computeHarmonyDerivatives(double[] netOutput,double[] planTargets,TechnologyComplex C,double[] intentsity ) {
         double []dh=new double[netOutput.length];
         for (int i=0; i<dh.length; i++) {
             dh[i]= Harmony.dH(planTargets[i],netOutput[i]);
@@ -112,7 +107,7 @@ public class Harmonizer {
     static void printstateS(double[] netOutput,double[]productHarmonyDerivatives,double[]productHarmony,TechnologyComplex C,double[]intensity) {
         System.out.print("netoutput ,");
         writeln(netOutput);
-        System.out.print("intensity,");
+             System.out.print("intensity,");
         writeln(intensity);
         System.out.print("h ,");
         writeln(productHarmony);
@@ -120,7 +115,7 @@ public class Harmonizer {
         System.out.print("dh/dp ,");
         writeln (productHarmonyDerivatives);
         double[] expansionrate=new double[C.techniques.size()];
-
+        
         double[] gainrate=new double[C.techniques.size()];
         for(int i=0; i<C.techniques.size(); i++)
         {
@@ -128,25 +123,43 @@ public class Harmonizer {
             gainrate[i]=t.rateOfHarmonyGain(productHarmonyDerivatives);
             expansionrate[i] =1+sigmoid(gainrate[i] ) *startingtemp*phase2adjust ;
         }
-        System.out.print("gainrate ,");
+         System.out.print("gainrate ,");
         writeln(gainrate);
-        System.out.print("expansionrate ,");
+         System.out.print("expansionrate ,");
         writeln(expansionrate);
     }
     static void  writeln(String s) {
         System.out.println(s);
-    } static void  write(String s) {
-        System.out.print(s);
     }
     static void  writeln(double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
         writeln("");
     } static void  write (double []d) {
-        for(int i=0; i<d.length; i++)System.out.printf(",%5.4f",d[i]);
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
 
     }
+      static void printResults(TechnologyComplex C, double [] intensity,double[] initialResource, double [] targets)throws Exception {
+        double [] netoutput=computeNetOutput(C,intensity,initialResource);
+        double []gross=computeGrossAvail(  C,   intensity, initialResource);
+
+        for(int i=0; i<netoutput.length; i++)
+            System.out.print(","+C.productIds[i]);
+        System.out.println();
+        System.out.print("\"Targets\"");
+        for(int i=0; i<netoutput.length; i++)
+            System.out.print(","+targets[i]);
+        System.out.println();
+        System.out.print("\"Net Output\"");
+        for(int i=0; i<netoutput.length; i++)
+            System.out.print(","+netoutput[i]);
+        System.out.println();
+        System.out.print("\"Gross Avail\"");
+        for(int i=0; i<netoutput.length; i++)
+            System.out.print(","+gross[i]);
+        System.out.println();
+    }
     /** for non final goods we make derivatives their harmonies the maximum of the derivatives of the harmonies of their users */
-    public static double nonfinalHarmonyDerivativeMax(double[] netOutput,int nonfinal,double [] dharmonies,TechnologyComplex C ) {
+    static double nonfinalHarmonyDerivativeMax(double[] netOutput,int nonfinal,double [] dharmonies,TechnologyComplex C ) {
         Vector< Vector<Integer>> userIndex;
         userIndex=C.buildUserIndex();
         double max,total;
@@ -170,14 +183,14 @@ public class Harmonizer {
                     d+= dharmonies[codes[j]]*mpp[j];
             }
             total +=d;
-
+            
             if((d)>max) {
                 max=d;
 
             }
         }
-        // return total/users.size();
-        return max;
+       // return total/users.size();
+         return max;
     }
     /** marginal physical product of technology techno with respect to the input */
     static double marginalphysicalproduct(int techno, int input, TechnologyComplex C ) {
@@ -228,33 +241,30 @@ public class Harmonizer {
     static void rescaleIntensity(double[]intense,TechnologyComplex C, double [] initialresource) {
         double [] netoutput=computeNetOutput(C,intense,initialresource);
         double maxfrac=0;
-        if(verbose)
+        if(verbose) 
         {
             writeln("post phase0");
-            write("net output");
-            writeln(netoutput);
-            write("intensity");
-            writeln(intense);
+           writeln("net output,");
+            writeln(netoutput);   writeln("intensity");writeln(intense);
         }
         for (int i=0; i<netoutput.length; i++) if(C.nonproduced[i]) {
                 double resource = initialresource[i];
                 double usage =resource- netoutput[i]  ;
                 double fractionaluse = usage /resource;
-                // System.out.println("non produced "+i+ "resource "+resource+" netoutput "+netoutput[i]+" usage "+usage);
+               // System.out.println("non produced "+i+ "resource "+resource+" netoutput "+netoutput[i]+" usage "+usage);
                 if (fractionaluse > maxfrac) maxfrac=fractionaluse;
             }
         double expansionratio = capacitytarget/maxfrac;
-        if(phase1rescale)
+          if(phase1rescale)
             // expand overall scale of production to balance
             for (int i=0; i<intense.length; i++)   intense[i]*=(expansionratio);
         // now make sure no other resource has a negative output
         netoutput=computeNetOutput(C,intense,initialresource);
         if(verbose) {
             writeln("post phase1");
-            write("net output");
-            writeln(netoutput);
-            write ("intensity");
-
+           writeln("net output,");
+            writeln(netoutput);writeln ("intense");
+       
             writeln(intense);
 
 
@@ -285,18 +295,13 @@ public class Harmonizer {
                         }
 
                     }
-                if (verbose) {
-                    write("shrink intensity by");
-                    writeln(shrinkby);
-                }
                 for(int i=0; i<shrinkby.length; i++)intense[i]*=shrinkby[i];
             }
         if(verbose) {
             writeln("postphase2");
-            write("net output");
-            writeln(netoutput);
-            write("intensity");
-
+            writeln("net output,");
+            writeln(netoutput);writeln("intense");
+       
             writeln(intense);
 
 
@@ -329,6 +334,10 @@ public class Harmonizer {
 
                     Vector<Integer> productionSet =index.elementAt(k);
                     for(Integer I:productionSet) {
+						if(simpleequalisation){
+							if(h[k]<mh)intensity[I]*= growfactor;
+						}
+						else
                         // sign is negative since we reduce the high harmonies
                         intensity[I]*= (1-fractionalchange);
                         if(intensity[I]<0)throw new IllegalIntensity(" intensity "+I+" went negative, fractional change = "+fractionalchange);
@@ -366,9 +375,9 @@ public class Harmonizer {
                           initialresource );
         netOutput=computeNetOutput(C,intensity,initialresource);
         derivativeOfProductHarmony=computeHarmonyDerivatives(  netOutput,  planTargets,  C, intensity );
-        if(verbose)
+        if(verbose) 
         {
-            writeln("prereallocation");
+            writeln("prereallocation"); 
             printstate(  intensity,  C,  initialresource,   planTargets);
         }
         double[] expansionrate=new double[C.techniques.size()];
@@ -379,10 +388,7 @@ public class Harmonizer {
         }
         double meane = mean(expansionrate);
         if (verbose )
-        {
-            System.out.print("expansionrate");
-            writeln(expansionrate);
-        }
+	        { System.out.print("expansionrate");writeln(expansionrate); }
         for(int i=0; i<C.techniques.size(); i++)
         {
 
@@ -394,7 +400,7 @@ public class Harmonizer {
         }
         netOutput=computeNetOutput(C,intensity,initialresource);
         derivativeOfProductHarmony=computeHarmonyDerivatives(  netOutput,  planTargets,  C, intensity );
-        if(verbose)
+        if(verbose) 
         {
             writeln("postreallocation");
             printstate(  intensity,  C,  initialresource,   planTargets);
@@ -405,19 +411,17 @@ public class Harmonizer {
     }
     static double[] computeNetOutput(TechnologyComplex C, double [] intensity,double[]initial) {
         double [] output =  computeGrossAvail(  C,  intensity, initial);
-        if (verbose) {
-            write("gross output");
-            writeln(output);
-            write("intensity");
-            writeln(intensity);
-        }
+		if (verbose){
+				writeln("output");
+				writeln(output);
+		}
         for(int j=0; j<C.techniqueCount(); j++) {
-
+			 
             Technique t= C.techniques.elementAt(j);
             for(int k=0; k<t.inputCodes.length; k++) {
                 output[t.inputCodes[k]]-= intensity[j]*t.inputUsage[k];
             }
-
+             
         }
         return output;
     }
@@ -428,17 +432,16 @@ public class Harmonizer {
         for(int j=0; j<C.techniqueCount(); j++) {
             Technique t= C.techniques.elementAt(j);
             output [t.productCode]+= t.grossOutput*intensity[j];
-            //if (verbose )
+			//if (verbose )  
             //    writeln(""+t.productCode+" " +t.grossOutput+" "+intensity[j]);
-            if (t instanceof JointProductionTechnique) {
+         if (t instanceof JointProductionTechnique) {
                 JointProductionTechnique J=(JointProductionTechnique)t;
                 int[] codes= J.getCoproductionCodes();
                 double[]Q=J.getCoproductionQuantities();
                 for (int k2=0; k2<codes.length; k2++) {
                     output[codes[k2]]+= intensity[j]*Q[k2];
                 }
-            }
-        }
+            }}
         return output;
     }
     /** we test it using Kantorovich's excavator example */
@@ -492,7 +495,7 @@ public class Harmonizer {
             double [] netoutput=computeNetOutput(C,intensity,initialresource);
             writeln("iters "+iters);
             writeln("phase 2 adjust "+phase2adjust +" starting temp "+startingtemp +"capacity target" +capacitytarget+" use weight "+useweight);
-            write("net outputs");
+            writeln("net outputs");
             writeln( netoutput);
 
             writeln("our intensities, followed by Kantorovich's ones ");

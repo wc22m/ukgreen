@@ -1,5 +1,11 @@
-all:   planning/nyearplan.class plan.txt test.txt result.csv iouk 
+all:   planning/nyearplan.class plan.txt  test.txt result.csv iouk Epltest hplan.txt planning/UKHarmony.class
 
+Epltest: model.EPL planning/Eplc.class
+	java planning.Eplc model.EPL >trace.txt
+
+doc: 
+	javadoc planning/*java
+	
 .java.class:
 	javac   $<
 
@@ -16,6 +22,8 @@ pasharm/harmonyplan:  pasharm/harmonyplan.pas pasharm/csvfilereader.pas pasharm/
 planning/csvfilereader.class: planning/csvfilereader.java planning/pcsv.java
 	javac planning/csvfilereader.java
 	
+planning/Eplc.class:  Epl/parser/Parser.class planning/Eplc.java
+	javac planning/Eplc.java
 clean:
 	rm planning/*.class  
 	rm plan.txt
@@ -27,24 +35,43 @@ pretty:
 planning/nyearplan.class:planning/nyearplan.java planning/csvfilereader.class
 		javac planning/nyearplan.java
 		
+		
+Epl/parser/Parser.java: Epl.sab
+	java -jar sablecc.jar Epl.sab
+
+Epl/parser/Parser.class:Epl/parser/Parser.java
+	javac Epl/parser/*java
+		
+planning/nyearEPL.class:planning/nyearEPL.java planning/csvfilereader.class
+		javac planning/nyearEPL.java
+		
 plan.txt: model.lp
 	lp_solve <model.lp|sort >plan.txt
+
+model.EPL:planning/nyearEPL.class   Makefile flows.csv cap.csv dep.csv labtarg.csv
+	java planning.nyearEPL flows.csv cap.csv dep.csv labtarg.csv |sort  >model.ppl
+	 awk 'NF > 0' model.ppl > model.EPL
 	
 model.lp:planning/nyearplan.class flows.csv cap.csv dep.csv labtarg.csv Makefile
 	java planning.nyearplan flows.csv cap.csv dep.csv labtarg.csv   >model.lp
 	
-hplan.txt:  planning/nyearplan.class  planning/nyearHarmony.class    Makefile
+hplan.txt:  planning/nyearplan.class  planning/nyearHarmony.class    Makefile flows.csv cap.csv dep.csv labtarg.csv
 	java planning.nyearHarmony flows.csv cap.csv dep.csv labtarg.csv   >hplan.txt
 	
 planning/testeconomy.class:planning/testeconomy.java
 	javac planning/testeconomy.java
 
-planning/nyearHarmony.class:planning/Harmonizer.java planning/TechnologyComplex.java planning/JointProductionTechnique.java planning/nyearHarmony.java planning/Technique.java
+planning/nyearHarmony.class:planning/Harmonizer.class planning/TechnologyComplex.class planning/JointProductionTechnique.java planning/nyearHarmony.java planning/Technique.java
 	javac planning/nyearHarmony.java
 
 result.csv:testflow.csv testcap.csv testdep.csv testtarg.csv planning/nyearHarmony.class
 	java planning.nyearHarmony testflow.csv testcap.csv testdep.csv testtarg.csv >result.csv
 	tail --lines=2 result.csv
+planning/TechnologyComplex.class: planning/TechnologyComplex.java
+	javac planning/TechnologyComplex.java
+planning/Harmonizer.class:planning/Harmonizer.java planning/Harmony.java
+	javac planning/Harmonizer.java
+
 
 pasresult.csv:testflow.csv testcap.csv testdep.csv testtarg.csv pasharm/harmonyplan
 	pasharm/harmonyplan testflow.csv testcap.csv testdep.csv testtarg.csv >pasresult.csv
@@ -54,7 +81,7 @@ pasresult.csv:testflow.csv testcap.csv testdep.csv testtarg.csv pasharm/harmonyp
 # section to build the info for the planning from existing
 # uk stats, it uses data in ../iouk
 
-iouk: planning/nyearplan.class  ukplan.lp ukplan.txt
+iouk: planning/nyearplan.class  ukplan.lp 
 
 ukplan.lp: planning/UKplan.class ../iouk/dep.csv ../iouk/Vexpandedcapitalstockmatrix2015.csv ../iouk/labtargs.csv ../iouk/imports.csv
 	java planning.UKplan ../iouk/domesticiot.csv ../iouk/Vexpandedcapitalstockmatrix2015.csv ../iouk/dep.csv ../iouk/labtargs.csv  ../iouk/imports.csv >ukplan.lp
@@ -80,6 +107,12 @@ planning/DepreciationTableExpand.class: planning/DepreciationTableExpand.java
 		
 planning/UKplan.class:planning/UKplan.java planning/csvfilereader.class
 		javac planning/UKplan.java
+		
+planning/UKHarmony.class:planning/UKHarmony.java planning/csvfilereader.class planning/nyearHarmony.class
+		javac planning/UKHarmony.java
+		
+UKH.csv: planning/UKHarmony.class ../iouk/dep.csv ../iouk/Vexpandedcapitalstockmatrix2015.csv ../iouk/labtargs.csv ../iouk/imports.csv
+	java planning.UKHarmony ../iouk/domesticiot.csv ../iouk/Vexpandedcapitalstockmatrix2015.csv ../iouk/dep.csv ../iouk/labtargs.csv  ../iouk/imports.csv  >UKH.csv
 
 ukplan.txt:ukplan.lp
 	wc ukplan.lp
