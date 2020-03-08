@@ -5,6 +5,7 @@ import java.util.*;
 it is modified to use the UK input output data as source info, ie, it handles imports and exports
  *<p>
  * It uses the Harmony algorithm to solve the plan<p>
+ * It outputs a plan in the language EPL <p>
  * Usage java planning.nyearplan flowmatrix.csv capitalmatrix.csv depreciationmatrix.csv laboursupplyandtargets.csv
  *
  * <p>
@@ -24,312 +25,461 @@ it is modified to use the UK input output data as source info, ie, it handles im
     along with this program.  If not, see https://www.gnu.org/licenses/.
     *
  * */
-public class UKHarmony extends nyearHarmony {
+public class UKHarmony extends nyearEPL
+{
     static final int flow=0,cap=1,dep=2,targ=3, imports=4;
-    ;
+    static int years;
     static int exports=0;// will calculate appropriate number
     static final short consistencyrange = 129;// only check the row and col headers up to this
     static final short lastimportrow =105; // disregard imports below this
     static final int labourcolintargets=129;
     static final int forexchangecol=130;
     static final int targetvectorlength=forexchangecol+1;
+    static final int exportcol=143;
+    static final int totalimportdemand=142;// column in the imports matrix
     static final int lastexportablerow = 111;
-    public static void main(String [] args)throws Exception {
+    static final double slackness =0.02;// margin allowed for slack labour and forex targeting
+    static final    HashSet<String> nonfinals = new HashSet<String>();
+    static final HashSet<String> nonproduced = new HashSet<String>();
+    public static void main(String [] args)throws Exception
+    {
         rowheads = new String[5][1];
         colheads = new String[5][1];
         matrices= new double [5][1][1];
-
-        double [][] uktarg;
-        if (args.length !=5 ) {
-            System.err.println("Usage java planning.UKHarmony flowmatrix.csv capitalmatrix.csv depreciationmatrix.csv laboursupplyandtargets.csv  imports.csv");
-        }  else {
-            csvfilereader flowread,capread,depread,labtargread, importread;
-            flowread=new csvfilereader(args[flow]);
-            pcsv flowtab = flowread.parsecsvfile();
-            capread= new csvfilereader(args[cap]);
-            pcsv captab = capread.parsecsvfile();
-            depread = new csvfilereader(args[dep]);
-            pcsv deptab = depread.parsecsvfile();
-            labtargread = new csvfilereader(args[targ]);
-            pcsv labetctab=labtargread .parsecsvfile();
-
-            importread = new csvfilereader(args[imports]);
-            pcsv importctab=importread .parsecsvfile();
-
-            if (importctab == null) {
-                throw new Exception(" Error opening or parsing "+args[imports]);
+        maxprod=129;// this is specific to the UK domestic table that I am using
+        double [][] uktarg =new double[1][1];// just to remove null var complaints
+        if (args.length !=5 )
+            {
+                System.err.println("Usage java planning.UKHarmony flowmatrix.csv capitalmatrix.csv depreciationmatrix.csv laboursupplyandtargets.csv  imports.csv");
             }
-            if (flowtab == null) {
-                throw new Exception(" Error opening or parsing "+args[flow]);
-            }
-            if (captab == null) {
-                throw new Exception(" Error opening or parsing "+args[cap]);
-            }
-            if (deptab == null) {
-                throw new Exception(" Error opening or parsing "+args[dep]);
-            }
-            if (labetctab == null) {
-                throw new Exception(" Error opening or parsing "+args[targ]);
-            }
-            pcsv[] parsed = {flowtab,captab,deptab,labetctab,importctab};
-            int targlab=-1,targdeficit=-1;
-            for (int i=flow ; i<=imports; i++) {
-                rowheads[i]=flowread.getrowheaders(parsed[i]);
-                colheads[i]=flowread.getcolheaders(parsed[i]);
-                matrices[i]=flowread.getdatamatrix(parsed[i]);
-
-                int consistency=consistent(colheads[flow],colheads[i]);
-                if(consistency>=0) if(i!= targ)throw new Exception(" flow table col header inconsistent with header of table "+args[i]
-                                +"\n"+  colheads[flow][consistency]+" !="+colheads[i][consistency]+" at position "+consistency);
-                if(i!= targ) {
-                    consistency=consistent(colheads[i],rowheads[i],(i==imports?lastimportrow:consistencyrange));
-
-                    if(consistency>0) throw new Exception("   col header inconsistent with row header for table  "+i
-                                                              +"\n'"+  colheads[i][consistency]+"' !='"+rowheads[i][consistency]+"' at position "+consistency
-                                                              +"\ncolheads="+Arrays.toString(colheads[i])
-                                                              +"\nrowheads="+Arrays.toString(rowheads[i]));
-                } else {
-                    // the format of the target vector is more resticted for the UK io table since
-                    // it assumes we just want to go on maximising the sum of current public and private
-                    // sector production. The target spreadsheet for the UK case just supplies labour and trade deficit
-                    // so we have to construct an old style target matrix whilst saving the details we have just read in
-                    // from the labtargs file
-                    uktarg=matrices[i];// save what we read
-                    /** the new matrix has as many years as specified in the targets file, but is fully expanded to
-                     * have as many rows as there are columns in the standard flow matrix, the last row, (lastimportrow-1)
-                     * will be now the labour row */
-                    matrices[i]=new double[uktarg.length][targetvectorlength];
-                    targlab = findinheaders("LABOUR",colheads[targ]);
-                    targdeficit =findinheaders("TRADEDEFICIT",colheads[targ]);
-
-
-                    /** fill in now the labour targets from the original file read in */
-                    for (int j=0; j<uktarg.length; j++) {
-                        matrices[i][j][labourcolintargets]=uktarg[j][targlab];
-                        matrices[i][j][forexchangecol]=uktarg[j][targdeficit]*0.01;
-                        // aim to be within this of the deficit given the allocated cash
-                    }
-
-                    // create the new colheads for the targets
-                    colheads[targ]=new String[targetvectorlength];
-                    colheads[targ][labourcolintargets]="LABOUR";
-                    colheads[targ][forexchangecol]="FOREX";
-                    for(int j=0; j<consistencyrange-1; j++)colheads[targ][j]=tidy(colheads[flow][j]);
-                    writeln(colheads[targ]);
-                    /** now find the public and private consumption cols of the flow matrix */
-                    int privatecons = findinheaders("HOUSEHOLDS", colheads[flow]);
-                    if(privatecons<0)throw new Exception("could not find indes of HOUSEHOLDS");
-                    int publiccons = findinheaders("PUBLICSECTOR",colheads[flow]);
-                    if(publiccons<0)throw new Exception("could not find indes of PUBLICSECTOR");
-                    //  writeln(colheads[targ]);
-                    /** set each year to have the same target */
-                    for (int y=1; y<uktarg.length; y++)
-                    {
-                        for(int p=0; p<consistencyrange-1; p++)
-                            matrices[targ][y][p]=(matrices[flow][p][privatecons]+matrices[flow][p][publiccons]) ;
-                        //    writeln(matrices[i][y]);
-                    }
-                }
-            }
-            // go through the targets matrix and make sure no targets are actually zero - make them very small positive amounts
-            for(int i=0; i<matrices[targ].length; i++)
-                for(int j=0; j<matrices[targ][i].length; j++)
-                    if(matrices[targ][i][j]==0)matrices[targ][i][j]=1 - Harmonizer.capacitytarget;
-            outputs = matrices[flow][outputrowinheaders() ];
-            labour = matrices[flow][labourRow()];
-            years = countyears(rowheads[targ]);
-
-            // System.out.println("run for "+years+" years");
-            maxprod=129;// this is specific to the UK domestic table that I am using
-            writeln("maxprod "+maxprod +" forexchangecol "+forexchangecol);
-            //  System.out.println(maximiser(years));
-            yearXproductIntensityIndex=new int[years+1][maxprod+2];
-            int year;
-            caps= countnonzero(matrices[cap]);
-
-            System.out.println("caps "+caps);
-            // work out how many products the harmonizer will have to solve for
-            // assume that we have N columns in our table and y years then
-            // we have Ny year product combinations
-            // in addition we have y labour variables
-            // plys y foreign exchange variables
-            // and caps.y capital stocks
-            // so the total is y(caps+N+1)
-
-            C =new TechnologyComplex ((forexchangecol+caps)*years );
-            writeln("productnum "+C.productCount());
-            // Assign identifiers to the outputs
-
-            for(int i=1; i<=forexchangecol; i++)
-                for (  year=1; year<=years; year++) {
-
-                    C.setProductName( flownum(i,year), productName(i,year,flownum(i,year)) );
-
-                }
-
-            for(int i=1; i<=maxprod ; i++)// name capital stocks
-                for(int j=1; j<=maxprod; j++)
-                    for (  year=1; year<=years; year++)
-                        if (matrices[cap][i][j] >0) {
-                            C.setProductName(capnum(relativecapnum[i][j],year,caps), "C["+i+"]["+j+"]"+year );
+        else
+            try
+                {
+                    csvfilereader flowread,capread,depread,labtargread, importread;
+                    flowread=new csvfilereader(args[flow]);
+                    pcsv flowtab = flowread.parsecsvfile();
+                    capread= new csvfilereader(args[cap]);
+                    pcsv captab = capread.parsecsvfile();
+                    depread = new csvfilereader(args[dep]);
+                    pcsv deptab = depread.parsecsvfile();
+                    labtargread = new csvfilereader(args[targ]);
+                    pcsv labetctab=labtargread .parsecsvfile();
+                    importread = new csvfilereader(args[imports]);
+                    pcsv importctab=importread .parsecsvfile();
+                    if (importctab == null)
+                        {
+                            throw new Exception(" Error opening or parsing "+args[imports]);
                         }
-
-
-
-            for (year=1; year<=years; year++) {
-                // add an export technique for each exportable product
-                for(int i=1; i<=lastexportablerow; i++)
-                {   double [] usage = {1};
-                    int  [] codes = {flownum(i,year)};
-                    Technique t= new Technique(
-
-                        // add a production technology for each definite product
-                        for(int i=1; i<=maxprod; i++)
-                {   double [] usage = new double[countinputsTo(i)];
-                        int  [] codes = new int[countinputsTo(i)];
-                        int j=0;
-                        int index;
-                        for(int k=1; k<=maxprod+1; k++) {
-                            if (matrices[flow][k][i]>0) {
-                                double flows=matrices[flow][k][i];
-                                usage[j]= flows;
-                                codes[j]=flownum(k,year);
-                                j++;
-                            }
-                            if( k<=maxprod)// no labour row for the capital matrix so we miss last row
-                                if (matrices[cap][k][i]>0) {
-                                    usage[j]= matrices[cap][k ][i ];
-                                    codes[j]=capnum(relativecapnum[k][i],year,caps);
-                                    j++;
+                    if (flowtab == null)
+                        {
+                            throw new Exception(" Error opening or parsing "+args[flow]);
+                        }
+                    if (captab == null)
+                        {
+                            throw new Exception(" Error opening or parsing "+args[cap]);
+                        }
+                    if (deptab == null)
+                        {
+                            throw new Exception(" Error opening or parsing "+args[dep]);
+                        }
+                    if (labetctab == null)
+                        {
+                            throw new Exception(" Error opening or parsing "+args[targ]);
+                        }
+                    pcsv[] parsed = {flowtab,captab,deptab,labetctab,importctab};
+                    int targlab=-1,targdeficit=-1;
+                    for (int i=flow ; i<=imports; i++)
+                        {
+                            rowheads[i]=flowread.getrowheaders(parsed[i]);
+                            colheads[i]=flowread.getcolheaders(parsed[i]);
+                            matrices[i]=flowread.getdatamatrix(parsed[i]);
+                            int consistency=consistent(colheads[flow],colheads[i]);
+                            if(consistency>=0) if(i!= targ)throw new Exception(" flow table col header inconsistent with header of table "+args[i]
+                                            +"\n"+  colheads[flow][consistency]+" !="+colheads[i][consistency]+" at position "+consistency);
+                            if(i!= targ)
+                                {
+                                    consistency=consistent(colheads[i],rowheads[i],(i==imports?lastimportrow:consistencyrange));
+                                    if(consistency>0) throw new Exception("   col header inconsistent with row header for table  "+i
+                                                                              +"\n'"+  colheads[i][consistency]+"' !='"+rowheads[i][consistency]+"' at position "+consistency
+                                                                              +"\ncolheads="+Arrays.toString(colheads[i])
+                                                                              +"\nrowheads="+Arrays.toString(rowheads[i]));
                                 }
                         }
-                        Technique t=new Technique (  productName(i,year,flownum(i,year)%maxprod), index=flownum(i,year), outputs[i],   usage, codes);
-                        C.addTechnique(t);
-                        yearXproductIntensityIndex[year][i]=C.techniqueCount()-1;
-                    }
-                    // now add a joint production technique for each type of capital accumulation except for the last year
-                    if(year<years) {
-                    for(int i=0; i<caps ; i++) {
-                            double [] usage = {1};// one unit of an input produces one unit of acc in next year
-                            int  [] codes =  {flownum(capnumtoflownum[i],year)};// always uses current product for this year
-                            int mainoutput=capnum(i,year+1,caps);
-                            double grossout = 1;
-                            if (year == years-1) {
-                                // penultimate year gets a simple technique
-                                //   writeln("i"+i);writeln("capnumtoflownum[i]"+capnumtoflownum[i]);writeln("flownum(capnumtoflownum[i],year)"+flownum(capnumtoflownum[i],year));
-                                Technique t=new Technique ("A"+C.productIds[mainoutput]+"of"+C.productIds[codes[0]], mainoutput,grossout,   usage, codes);
-                                C.addTechnique(t);
-                            } else {
-                                // other years get a joint production method
-                                double [] coproduction= new double[years-year-1];
-                                int [] cocodes= new int[years-year-1];
-                                for (int k=0; k<cocodes.length; k++) {
-                                    cocodes[k]=capnum(i,year+k+2,caps);
-                                    coproduction[k]=Math.pow(1-deprate(i),k+1);// depreciate added on capital stock in future years
+                    for (int i=flow ; i<=imports; i++)
+                        {
+                            if(i==targ)
+                                {
+                                    // the format of the target vector is more resticted for the UK io table since
+                                    // it assumes we just want to go on maximising the sum of current public and private
+                                    // sector production. The target spreadsheet for the UK case just supplies labour and trade deficit
+                                    // so we have to construct an old style target matrix whilst saving the details we have just read in
+                                    // from the labtargs file
+                                    uktarg=matrices[i];// save what we read
+                                    /** the new matrix has as many years as specified in the targets file, but is fully expanded to
+                                     * have as many rows as there are columns in the standard flow matrix, the last row, (lastimportrow-1)
+                                     * will be now the labour row */
+                                    matrices[targ]=new double[uktarg.length][targetvectorlength];
+                                    targlab = findinheaders("LABOUR",colheads[targ]);
+                                    targdeficit =findinheaders("TRADEDEFICIT",colheads[targ]);
+                                    /** fill in now the labour targets from the original file read in */
+                                    for (int y=0; y<uktarg.length; y++)
+                                        {
+                                            matrices[targ][y][labourcolintargets]=uktarg[y][targlab]*0.01;// this is the target level of free labour
+                                            matrices[targ][y][forexchangecol]=uktarg[y][targdeficit]*0.04;
+                                            // aim to be within this of the deficit given the allocated cash
+                                        }
+                                    // create the new colheads for the targets
+                                    colheads[targ]=new String[targetvectorlength];
+                                    colheads[targ][labourcolintargets]="LABOUR";
+                                    colheads[targ][forexchangecol]="FOREX";
+                                    for(int j=0; j<consistencyrange; j++)colheads[targ][j]=tidy(rowheads[flow][j]);
+                                    //writeln(colheads[targ]);
+                                    /** now find the public and private consumption cols of the flow matrix */
+                                    int privatecons = findinheaders("HOUSEHOLDS", colheads[flow]);
+                                    if(privatecons<0)throw new Exception("could not find indes of HOUSEHOLDS");
+                                    int publiccons = findinheaders("PUBLICSECTOR",colheads[flow]);
+                                    if(publiccons<0)throw new Exception("could not find indes of PUBLICSECTOR");
+                                    //    writeln(colheads[imports]);
+                                    int importcons=findinheaders("HOUSEHOLDS", colheads[imports]);
+                                    if(importcons<0)
+                                        {
+                                            throw new Exception("could not find index of HOUSEHOLDS in imports");
+                                        }
+                                    int importgov=findinheaders("CENTRALGOVERNMENT", colheads[imports]);
+                                    if(importgov<0)throw new Exception("could not find index of CENTRALGOVERNMENT in imports");
+                                    outputs = matrices[flow][outputrowinheaders() ];
+                                    /** set each year to have the same target */
+                                    for (int y=1; y<uktarg.length; y++)
+                                        {
+                                            for(int p=0; p<=consistencyrange; p++)
+                                                try
+                                                    {
+                                                        matrices[targ][y][p]=(matrices[flow][p][privatecons]
+                                                                              +matrices[flow][p][publiccons]
+                                                                              +(
+                                                                                  p<lastimportrow?
+                                                                                  matrices[imports][p][importcons]
+                                                                                  +matrices[imports][p][importgov]
+                                                                                  :0
+                                                                              )
+                                                                             ) ;
+                                                        if(matrices[targ][y][p]<0.02*outputs[p ])matrices[targ][y][p]=outputs[p]*0.02;
+                                                    }
+                                                catch(Exception ee)
+                                                    {
+                                                        System.err.println("error "+ee);
+                                                        System.err.println("p="+p);
+                                                        System.exit(-1);
+                                                    }
+                                        }
                                 }
-                                Technique t=new JointProductionTechnique("A"+C.productIds[mainoutput]+"of"+C.productIds[codes[0]],mainoutput,grossout,usage,codes,coproduction,cocodes);
-                                C.addTechnique(t);
-                            }
                         }
-                    }
-
+                    boolean[] nonzerostock=new boolean[maxprod+1];
+                    double [] totalstock = new double [maxprod+1];
+                    double [] deprate = new double [ maxprod +1 ];
+                    int years = countyears(rowheads[targ]);
+                    outputs = matrices[flow][outputrowinheaders() ];
+                    //   System.out.println("labour row is "+labourRow());
+                    labour = matrices[flow][labourRow()];
+                    System.out.println(" ");
+                    for (int year=1; year<=years; year++)
+                        // set technique to produce the final outputs for all products in target list
+                        System.out.println(targtech(year));
+                    for (int year=1; year<=years; year++)
+                        {
+                            // specify how much foreign exchange there is
+                            System.out.println("Resource "+"\t " +uktarg[year][targdeficit] +"\tFOREX"+year+";");
+                            nonfin( "FOREX"+year);
+                            // now print out labour supply constraint
+                            System.out.println("Resource "+"\t " +uktarg[year][targlab]+"\t"
+                                               +namelabourfor(year)+";");
+                            nonprod(namelabourfor(year));
+                            nonfin(namelabourfor(year));
+                            for(int product=1; product<=maxprod; product++)
+                                {
+                                    // iterate through all the things to be produced
+                                    // putout the foreign trade techniques
+                                    double forexq=matrices[flow][product][exportcol]+1;
+                                    double importq=(product< lastimportrow?
+                                                    (matrices[imports][product][totalimportdemand])
+                                                    :forexq)+1;
+                                    {
+                                        System.out.println("\nTechnique\t EX_"+nameoutput(product,year)+"\t[" +forexq+" "+nameoutput(product,year)+"]-> "+forexq+" \tFOREX"+year+";");
+                                        System.out.println("\nTechnique\t IM_"+nameoutput(product,year)+"\t["+importq+"\tFOREX"+year+"]->  "+
+                                                           importq+" \t"+nameoutput(product,year)+";");
+                                    }
+                                    if(year==1)System.out.print("Frozen \t");
+                                    System.out.print("\nTechnique\t T_"+nameoutput(product,year)+"\t[\n");
+                                    for(int stock =1; stock<=maxprod; stock++)
+                                        {
+                                            String eq=outputequationfor(product,stock,year);
+                                            String eq2 = flowconstraintfor(product,stock,year);
+                                            if(!((eq+eq2).equals(""))) System.out.print(" "+eq+eq2+(stock<maxprod?" ":""));
+                                        }
+                                    System.out.println(" \t"+labourconstraintfor(product,year)+"\n]-> "+outputs[product]+" "+nameoutput(product,year)+";\n");
+                                    // output resource statements for each kind of capital good
+                                }
+                            totalstock = new double [maxprod+1];
+                            for(int stock =1; stock<=maxprod; stock++)
+                                // see which types of stock have non zero use for at least 1 product
+                                {
+                                    // compute the depreciated value of the initial stock for the current year
+                                    double all =0;
+                                    for (int products=1; products<=maxprod; products++)
+                                        if (matrices[cap][stock][products]>0)
+                                            {
+                                                nonfin(namecap(products,stock,year));
+                                                //  if(year==1)nonprod(namecap(products,stock,year));
+                                                writeln("Resource "
+                                                        +( matrices[cap][stock][products]* Math.pow( 1-matrices[dep][stock][products],year-1) )
+                                                        +" \t"  +namecap(products,stock,year)+";");
+                                                totalstock[stock]+=matrices[cap][stock][products];
+                                                if (deprate[stock]<matrices[cap][stock][products])
+                                                    deprate[stock]=matrices[dep][stock][products];
+                                                all+= Math.pow( 1-matrices[dep][stock][products],year-1) *matrices[cap][stock][products];
+                                            }
+                                    if(all>0)
+                                        nonzerostock[stock]=(all>0);
+                                }
+                            // writeln(deprate);
+                            // now print out the accumulation equations
+                            for(int stock =1; stock<=maxprod; stock++)
+                                {
+                                    //  System.out.println(namedep(product,stock,year)+" =\t"+matrices[dep][stock][product]+" "+namecap(product,stock,year)+";");
+                                    if (year>1)for (int products=1; products<=maxprod; products++)
+                                            {
+                                                if(matrices[cap][stock][products]>0)
+                                                    // we only need to output the capital accumulation once
+                                                    // for each stock type
+                                                    {
+                                                        double quant =matrices[cap][stock][products]*deprate[stock];
+                                                        double [] coproduction= new double[years-year+1];
+                                                        for (int k=0; k<coproduction.length; k++)
+                                                            coproduction[k]=quant*Math.pow(1-deprate[stock],k);// depreciate added on capital stock in future years
+                                                        String s ="Technique A"+
+                                                                  "_"+namecap(products,stock,year-1)+"\t[ "+quant+" \t"+
+                                                                  nameoutput(stock,year-1)+"]->\t[";
+                                                        for (int k=0; k<coproduction.length; k++)
+                                                            {
+                                                                s+=coproduction[k];
+                                                                s+=" ";
+                                                                s+=namecap( products,stock,k+year)+" ";
+                                                            }
+                                                        System.out.println(s+"];");
+                                                    }
+                                            }
+                                }
+                        }
+                    totalstock = new double [maxprod+1];
+                    for(int stock =1; stock<=maxprod; stock++)
+                        //total up the stocks
+                        for (int products=1; products<=maxprod; products++)
+                            if (matrices[cap][stock][products]>0)
+                                totalstock[stock]+=matrices[cap][stock][products];
+                    System.out.print("Target[");
+                    for (int year=1; year<=years; year++)
+                        {
+                            for (int product=1; product<targetvectorlength; product++)
+                                if(!nonfinals.contains(tidy(colheads[targ][product])+year))
+                                    {
+                                        System.out.print("\n\t "+matrices[targ][year][product]+" \t"+tidy(colheads[targ][product])+year);
+                                        if( +matrices[targ][year][product]==0)
+                                            {
+                                                System.err.println(" zero target for "+tidy(colheads[targ][product])+year);
+                                                return;
+                                            }
+                                    }
+                            for (int stock=1; stock<=maxprod; stock++)
+                                for(int product=1; product<=maxprod; product++)
+                                    if(!nonfinals.contains(namecap(product,stock,year)))
+                                        if (matrices[cap][stock][product]>0)
+                                            System.out.print(" "+(matrices[cap][stock][product]*slackness)+" "+namecap(product,stock,year));
+                        }
+                    System.out.println("];");
                 }
-                for (Technique t:C.techniques) {
-                    //    writeln(t.toString());
+            catch(Exception eee)
+                {
+                    System.err.println("error "+eee);
+                    eee.printStackTrace();
+                    System.exit(-1);
                 }
+    }
 
-                // now set up the initial resource vector
-                double []initialResource = new double[C.productCount()];
-                // put in each years labour
-
-                //   writeln("labour row "+lc);
-                for(int y=1; y<=years; y++) {
-                    int ir=flownum(labourcolintargets,y);
-                    //		System.out.println("lc ="+lc+" ir="+ir);
-                    initialResource [ir]=matrices[targ][y][labourcolintargets];
-                    C.nonproduced[ir]=true;
-                    C.nonfinal[ir]=true;
+    static String flowconstraintfor(int product, int input, int year)
+    {
+        String s="";
+        if(matrices[flow][input][product]!=0.0)
+            try
+                {
+                    double q=matrices[flow][input][product];
+                    if (lastimportrow >input)
+                        {
+                            if(matrices[imports][input].length>product)
+                                q+=matrices[imports][input][product];
+                        }
+                    if (!(nodepinflow &&(matrices[cap][input][product]>0)))
+                        s=s+ " \t"+(q)+" \t"+nameflow(product,input,year)+"\n";
                 }
-
-                // put in each years initial capital stock allowing for depreciation
-                for(int i=1; i<matrices[cap].length; i++) {
-
-                    for(int j=1; j<matrices[cap][i].length; j++) {
-                        if(matrices[cap][i][j]>0)
-                            for(int y=1; y<=years; y++) {
-                                int cn=capnum(relativecapnum[i][j],y,caps);
-                                if (Harmonizer.verbose)System.out.println(" "+i+","+j+","+y+","+cn);
-                                if(y==1)C.nonproduced[cn]=true;
-                                C.nonfinal[cn]=true;
-                                initialResource [cn]=matrices[cap][ i][j]* Math.pow(1-matrices[dep][i][j],y-1);
-                            }
-                    }
+            catch(Exception ee)
+                {
+                    System.err.println("input="+input+"matrices[imports].length"+matrices[imports].length+" product="+product+ee);
+                    System.exit(-1);
                 }
-
-
-                // now set up the target vector
-                double []targets = new double[C.productCount()];
-                // initialise to very small numbers to prevent divide by zero
-
-                for(int i=0; i<targets.length; i++)targets[i]=0.03;
-                for(int y=1; y<=years; y++) {
-                    for(int j=1; j<labourcolintargets; j++)  // do not include the labour col of the targets
-                        targets[flownum(j,y)]=matrices[targ][y][j];
-                    //   writeln("matrix targs , year "+y);
-                    //   writeln(matrices[targ][y]);
-                }
-
-                //     writeln("targets");
-                //     writeln(targets);
-                Harmonizer.verbose=true;
-                Harmonizer.iters=1;
-                if( Harmonizer.verbose) { //writeln("allheadings");
-                    writeln(C.allheadings());
-                }
-                long start = System.currentTimeMillis();
-                double [] intensities= Harmonizer.balancePlan(   C, targets,  initialResource   );
-                long stop= System.currentTimeMillis();
-
-                writeln("took "+((stop-start)*0.001)+" sec");
-                printResults(C, intensities, initialResource);
+        else
+            {
+                s="";
             }
-        }
-        static int   consistent(String []shorter,String[]longer,int range) { /* return -1 if the lists are consistent */
-            int shortone=shorter.length;
-            if(longer.length<shorter.length)shortone=longer.length;
-            if (shortone > range) shortone= range;
-            for(int i= 0 ; i<shortone; i++) {
+        return s;
+    }
+    static int   consistent(String []shorter,String[]longer,int range)   /* return -1 if the lists are consistent */
+    {
+        int shortone=shorter.length;
+        if(longer.length<shorter.length)shortone=longer.length;
+        if (shortone > range) shortone= range;
+        for(int i= 0 ; i<shortone; i++)
+            {
                 if(shorter[i]==null) return i;
                 if(longer[i]==null) return i;
                 if (!tidy(shorter[i]).equals(tidy(longer[i])))return i;
             }
-            return -1;
-        }
-        static int findinheaders(String key,String[] headers) {
-            for(int i=0; i<headers.length; i++)if(headers[i].equals(key))return i;
-            return -1;
-        }
-        static int   consistent(String []shorter,String[]longer ) {
-            return consistent(shorter,longer,consistencyrange);
-        }
-
-        static String productName(int prod, int year,int internalcode) {
-            return colheads[targ][prod]+year;//+"Y"+year+"{"+internalcode+"}";
-        }
-        static int flownum(int prod, int year) {
-            return  (prod-1)+(year-1)*(forexchangecol);
-        }
-        static int capnum(int prod, int year,int maxcap) {
-            return (prod)+(year-1)*(maxcap)+years*(forexchangecol);
-        }
-        static String tidy(String s)// remove all non alpha
-        {   String ns="";
-            char []C= s.toCharArray();
-            for (char c:C) {
-                if ((c>='A') && (c<='Z')) {
-                    ns+=c;
-                }
-            }
-            return ns;
-        }
+        return -1;
     }
+    static int findinheaders(String key,String[] headers)
+    {
+        for(int i=0; i<headers.length; i++)
+            try
+                {
+                    if(tidy(headers[i]).equals(key))return i;
+                }
+            catch(Exception ee)
+                {
+                    System.err.println("i="+i+" "+ee);
+                    if(headers==null) System.err.println("headers null");
+                    //	System.exit(-1);
+                }
+        return -1;
+    }
+    static int   consistent(String []shorter,String[]longer )
+    {
+        return consistent(shorter,longer,consistencyrange);
+    }
+    static String namecap(int product, int input, int year)
+    {
+        return "C_"+ascn(product)+ productName(input,year);
+    }
+    /** return an ascii base 26 rep of the number i */
+    static String ascn(int i)
+    {
+        if(i==0)return "_";
+        return (ascn(i /26)+(char)('A'+( i %26))) ;
+    }
+
+    static String namecap(  int input, int year)
+    {
+        return "C_"+ productName(input,year);
+    }
+    static String outputequationfor(int product,int stock, int year)
+    {
+        String s="";
+        if(matrices[cap][stock][product]!=0.0)
+            {
+                s=s+" \t"+((1-slackness)* matrices[cap][stock][product])+" \t"+namecap(product,stock,year)+"\n";
+            }
+        else
+            {
+                s="";
+            }
+        return s;
+    }
+    static String productName(int prod, int year )
+    {
+        return tidy(colheads[targ][prod])+year;//+"Y"+year+"{"+internalcode+"}";
+    }
+    static int flownum(int prod, int year)
+    {
+        return  (prod-1)+(year-1)*(forexchangecol);
+    }
+    static String targeqn(int year)
+    {
+        String s= "";
+        for (int i=1; i<=maxprod; i++)if(matrices[targ][year][i]>0)s= s +
+                        +( matrices[targ][year][i] )+ " "+  ((nameconsumption(i,year)))+(i<maxprod?" ":" ");
+        return s ;
+    }
+    static int capnum(int prod, int year,int maxcap)
+    {
+        return (prod)+(year-1)*(maxcap)+years*(forexchangecol);
+    }
+    static void  writeln(String s)
+    {
+        System.out.println(s);
+    } static void  write (String s)
+    {
+        System.out.print (s);
+    }
+    static void  writeln(boolean []d)
+    {
+        for(int i=0; i<d.length; i++)System.out.print(" ,"+d[i]);
+        writeln("");
+    }
+    static void  writeln(double []d)
+    {
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
+        writeln("");
+    }
+    static String labourconstraintfor(int product,  int year)throws Exception
+    {
+        String s="";
+        s=s+(labour[product]);
+        s=s+" "+namelabourfor(year)+" ";
+        if(labour[product]==0.0)s="";
+        return s;
+    }
+    static String namelabourfor(  int year)
+    {
+        return "LABOUR"+ year;
+    }
+    static void  writeln(String []s)
+    {
+        for(int i=0; i<s.length; i++)System.out.printf(","+s[i]);
+        writeln("");
+    }
+    static void  write(double []d)
+    {
+        for(int i=0; i<d.length; i++)System.out.printf("%5.4f,",d[i]);
+    }
+    static void  write(String []s)
+    {
+        for(int i=0; i<s.length; i++)System.out.printf(","+s[i]);
+    }
+    static double total(double[] a)
+    {
+        double t=0;
+        for(double v:a)t+=v;
+        return t;
+    }
+    static void nonprod(String s)
+    {
+        System.out.println("Nonproduced[ "+s+"];");
+        nonproduced.add(s);
+    }
+    static void nonfin(String s)
+    {
+        System.out.println("Nonfinal[ "+s+"];");
+        nonfinals.add(s);
+    }
+
+    static String tidy(String s)   // remove all non alpha
+    {
+        String ns="";
+        char []C= s.toCharArray();
+        for (char c:C)
+            {
+                if ((c>='A') && (c<='Z'))
+                    {
+                        if(ns.length()<idlen) ns+=c;
+                    }
+            }
+        return ns;
+    }
+}

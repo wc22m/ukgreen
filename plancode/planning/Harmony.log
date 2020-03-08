@@ -1,0 +1,195 @@
+This is METAFONT, Version 2.7182818 (TeX Live 2019/dev/Debian) (preloaded base=mf 2019.8.23)  22 FEB 2020 12:17
+**Harmony.java modHa
+(Harmony.java
+>> package.planning
+! Isolated expression.
+<to be read again> 
+                   ;
+l.1 package planning;
+                     
+? q
+OK, entering batchmode...
+! A primary expression can't begin with `;'.
+<inserted text> 
+                0
+<to be read again> 
+                   ;
+l.2 import java.io.*;
+                     
+I'm afraid I need some sort of value in order to continue,
+so I've tentatively inserted `0'. You may want to
+delete this zero and insert something else;
+see Chapter 27 of The METAFONTbook for an example.
+
+>> 0
+! Isolated expression.
+<to be read again> 
+                   ;
+l.2 import java.io.*;
+                     
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+! A primary expression can't begin with `;'.
+<inserted text> 
+                0
+<to be read again> 
+                   ;
+l.3 import java.util.*;
+                       
+I'm afraid I need some sort of value in order to continue,
+so I've tentatively inserted `0'. You may want to
+delete this zero and insert something else;
+see Chapter 27 of The METAFONTbook for an example.
+
+>> 0
+! Isolated expression.
+<to be read again> 
+                   ;
+l.3 import java.util.*;
+                       
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+>> /**A.class
+! Isolated expression.
+<to be read again> 
+                   to
+l.4 /** A class to
+                   compute the harmony function described in Towards a New S...
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+! Extra tokens will be flushed.
+<to be read again> 
+                   to
+l.4 /** A class to
+                   compute the harmony function described in Towards a New S...
+I've just read as much of that statement as I could fathom,
+so a semicolon should have been next. It's very puzzling...
+but I'll try to get myself back together, by ignoring
+everything up to the next `;'. Please insert a semicolon
+now in front of anything that you don't want me to delete.
+(See Chapter 27 of The METAFONTbook for an example.)
+
+>> without.even.the.implied.warranty
+! Isolated expression.
+<to be read again> 
+                   of
+l.14 ...ANTY; without even the implied warranty of
+                                                  
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+! Extra tokens will be flushed.
+<to be read again> 
+                   of
+l.14 ...ANTY; without even the implied warranty of
+                                                  
+I've just read as much of that statement as I could fathom,
+so a semicolon should have been next. It's very puzzling...
+but I'll try to get myself back together, by ignoring
+everything up to the next `;'. Please insert a semicolon
+now in front of anything that you don't want me to delete.
+(See Chapter 27 of The METAFONTbook for an example.)
+
+>> System.out.println
+! Isolated expression.
+<to be read again> 
+                   (
+l.26         System.out.println(
+                                "target,netoutput,gross,top,bottom,Scale, H,...
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+! Extra tokens will be flushed.
+<to be read again> 
+                   (
+l.26         System.out.println(
+                                "target,netoutput,gross,top,bottom,Scale, H,...
+I've just read as much of that statement as I could fathom,
+so a semicolon should have been next. It's very puzzling...
+but I'll try to get myself back together, by ignoring
+everything up to the next `;'. Please insert a semicolon
+now in front of anything that you don't want me to delete.
+(See Chapter 27 of The METAFONTbook for an example.)
+
+>> try
+! Isolated expression.
+<to be read again> 
+                   {
+l.29             {
+                  
+I couldn't find an `=' or `:=' after the
+expression that is shown above this error message,
+so I guess I'll just ignore it and carry on.
+
+! Extra tokens will be flushed.
+<to be read again> 
+                   {
+l.29             {
+                  
+I've just read as much of that statement as I could fathom,
+so a semicolon should have been next. It's very puzzling...
+but I'll try to get myself back together, by ignoring
+everything up to the next `;'. Please insert a semicolon
+now in front of anything that you don't want me to delete.
+(See Chapter 27 of The METAFONTbook for an example.)
+
+! Missing `=' has been inserted.
+<to be read again> 
+                   double
+l.31                 for (double
+                                 i=-10; i<250; i+=10)
+The next thing in this loop should have been `=' or `:='.
+But don't worry; I'll pretend that an equals sign
+was present, and I'll look for the values next.
+
+>> double.i+10
+! Unknown relation will be considered false.
+<to be read again> 
+                   ;
+l.31                 for (double i=-10;
+                                        i<250; i+=10)
+Oh dear. I can't decide if the expression above is positive,
+negative, or zero. So this comparison test won't be `true'.
+
+! Missing `:' has been inserted.
+<to be read again> 
+                   ;
+l.31                 for (double i=-10;
+                                        i<250; i+=10)
+The next thing in this loop should have been a `:'.
+So I'll pretend that a colon was present;
+everything from here to `endfor' will be iterated.
+
+! Enormous number has been reduced.
+l.39                 for (double i=1; i<50000
+                                             ; i*=7)
+I can't handle numbers bigger than about 4095.99998;
+so I've changed your constant to that maximum amount.
+
+)
+Runaway loop?
+;i<250;i+=10){double.top=(EXPR0)i-target);double.bottom=target+1;double ETC.
+! File ended while scanning the text of a for loop.
+<inserted text> 
+                endfor
+<*> Harmony.java
+                 modHa
+I suspect you have forgotten an `endfor',
+causing me to read past where you wanted me to stop.
+I'll try to recover; but if the error is serious,
+you'd better type `E' or `X' now and fix your file.
+
+! Emergency stop.
+<*> Harmony.java modHa
+                      
+*** (job aborted, no legal end found)
+
+

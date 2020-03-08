@@ -1,10 +1,12 @@
 package planning;
 /** class to hold csv files after they have been read in as a two D linke list */
-public class pcsv {
+public class pcsv
+{
     pcsv right;
     celltype tag;
     /** prints out the tree in csv format */
-    public String toString() {
+    public String toString()
+    {
         return tag.toString()+
                (right==null?"":
                 (tag instanceof linestart?"":",")
@@ -16,28 +18,36 @@ public class pcsv {
     }
 };
 class celltype {};
-class linestart extends celltype {
+class linestart extends celltype
+{
     pcsv down;
-    linestart(pcsv p) {
+    linestart(pcsv p)
+    {
         down=p;
     }
-    public String toString() {
+    public String toString()
+    {
         return "\n";
     }
 };
-class numeric extends celltype {
+class numeric extends celltype
+{
     double number;
-    public String toString() {
+    public String toString()
+    {
         return ""+number;
     }
 };
 
-class alpha extends celltype {
+class alpha extends celltype
+{
     String textual;
-    public String toString() {
+    public String toString()
+    {
         return textual;
     }
-    alpha(String s) {
+    alpha(String s)
+    {
         textual =s;
     }
 };

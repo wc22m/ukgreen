@@ -21,7 +21,8 @@ import java.util.*;
        You should have received a copy of the GNU General Public License
        along with this program.  If not, see https://www.gnu.org/licenses/.
     * */
-public class JointProductionTechnique extends Technique {
+public class JointProductionTechnique extends Technique
+{
     /** note the coproducts are in addition to the main product */
     double [] coproductOutput;
     int [] coproductCodes;
@@ -31,12 +32,14 @@ public class JointProductionTechnique extends Technique {
      * the identity of the inputs by codes<p>
      * the quantity of coproduct outputs by cooutput<p>
      * the identity of the coproducts by cooutputcodes<p> note the coproducts are in addition to the main product */
-    public  JointProductionTechnique (String id, int PC, double gO, double[] usage,int[]codes,double[] cooutput,int[] cooutputcodes) {
+    public  JointProductionTechnique (String id, int PC, double gO, double[] usage,int[]codes,double[] cooutput,int[] cooutputcodes)
+    {
         super(id,  PC,   gO,   usage, codes);
         coproductCodes=cooutputcodes;
         coproductOutput=cooutput;
     }
-    public String toString() {
+    public String toString()
+    {
         return  "JointProductionTechnique{"+identifier+","+productCode+","+grossOutput+",\n"+
                 Arrays.toString(coproductCodes)+",\n"+
                 Arrays.toString(coproductOutput)+
@@ -45,32 +48,39 @@ public class JointProductionTechnique extends Technique {
     }
     /** tells you the rate of harmony gain per unit of input where both output and input are
      * measured in contribution to total harmony */
-    public double rateOfHarmonyGain(double[]derivativeOfProductHarmony) {
+    public double rateOfHarmonyGain(double[]derivativeOfProductHarmony)
+    {
         double gain = derivativeOfProductHarmony[ productCode]* grossOutput;
         double cost=0;
-        for(int j=0; j< inputCodes.length; j++) {
-            cost+=derivativeOfProductHarmony[ inputCodes[j]]* inputUsage[j];
-        }
-        for(int j=0; j< coproductCodes.length; j++) {
-            gain+=derivativeOfProductHarmony[ coproductCodes[j]]* coproductOutput[j];
-        }
+        for(int j=0; j< inputCodes.length; j++)
+            {
+                cost+=derivativeOfProductHarmony[ inputCodes[j]]* inputUsage[j];
+            }
+        for(int j=0; j< coproductCodes.length; j++)
+            {
+                gain+=derivativeOfProductHarmony[ coproductCodes[j]]* coproductOutput[j];
+            }
         return (gain-cost)/cost;
     }
     /** this returns the marginal physical products of all the co products
      * that result from one extra unit of the input */
-    public double[]  marginalphysicalcoproducts(int    input) {
+    public double[]  marginalphysicalcoproducts(int    input)
+    {
         double[] mpp = new double[coproductCodes.length];
         int pos =findiIna(input,  inputCodes);
-        for(int i=0; i < mpp.length; i++) {
-            mpp[i]=coproductOutput[i]/inputUsage[pos];
-        }
+        for(int i=0; i < mpp.length; i++)
+            {
+                mpp[i]=coproductOutput[i]/inputUsage[pos];
+            }
         return mpp;
     }
 
-    public double []getCoproductionQuantities() {
+    public double []getCoproductionQuantities()
+    {
         return coproductOutput;
     }
-    public int[] getCoproductionCodes() {
+    public int[] getCoproductionCodes()
+    {
         return coproductCodes;
     }
 }

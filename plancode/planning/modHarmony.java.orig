@@ -1,0 +1,90 @@
+package planning;
+import java.io.*;
+import java.util.*;
+/** A class to compute the harmony function described in Towards a New Socialism
+  <p>
+       Copyright (C) 2018 William Paul Cockshott
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see https://www.gnu.org/licenses/.
+    * */
+public class Harmony
+{
+    public static void main(String[] args)
+    {
+        System.out.println("use sigmoid ,"+useSigmoid);
+        System.out.println("target,netoutput,gross,top,bottom,Scale, H, dH");
+        double target =150;
+        try
+            {
+                double gross=200;
+                for (double i=-10; i<250; i+=10)
+                    {
+                        double top=(i-target  );
+                        double bottom = target+1;
+                        double scale = top/bottom;
+                        System.out.println(" "+target+","+i+","+gross+","+top+","+bottom+","+scale+","+H(target,i,gross)+","+dH(target,i,gross));
+                    }
+                target = 0.02;
+                for (double i=1; i<50000; i*=7)
+                    {
+                        double top=(i-target  );
+                        double bottom = target+1;
+                        double scale = top/bottom;
+                        System.out.println(" "+target+","+i+","+gross+","+top+","+bottom+","+scale+","+H(target,i,gross)+","+dH(target,i,gross));
+                    }
+                    
+            }
+        catch(Exception e)
+            {
+                System.err.println("error "+e);
+            }
+    }
+    public static  boolean useSigmoid=false;
+    /** the harmony function itself */
+    public static double H(double target, double netoutput, double grossoutput) throws Exception
+    {
+        double scale = ( (netoutput-target  )/(target+1));
+        //    System.out.println("H("+target+","+netoutput+") scale "+scale);
+        if (scale<0) return scale - (scale*scale)*0.5;
+        if(Double.isNaN(Math.log(scale+1)))
+            {
+                throw new Exception("in Harmony.H , log(scale+1) is Nan, scale="+scale+" target="+target+"netoutput="+netoutput);
+            }
+        return Math.log(scale+1);
+    }
+    /** take an argument fromplus and minus infinity and compress to plus and minus 1 with negative values going smoothly negabive etc */
+    static double sigmoid(double d) throws Exception
+    {
+        if (Double.isInfinite(d)) return 1;
+        if (Double.isNaN(d)) throw new Exception(" illegal NaN input to sigmoid function ");
+        if (d>0) return d/(1+d);
+        if (d==0) return 0;
+        d= -d;
+        return -(d/(1+d) );
+    }
+
+    /** the derivative of the harmony function
+     * evaluated numerically so as to be independent of the H function */
+    public static double dH(double target, double netoutput,double grossoutput)throws Exception
+    {
+        double epsilon = 0.000001*grossoutput;
+        double base = H(target,netoutput,grossoutput);
+        double basePlusEpsilon = H(target, epsilon+netoutput,grossoutput);
+        return (basePlusEpsilon - base)/epsilon;
+        // Analytic soln
+        //  double scale =  (netoutput-target  )/target;
+        //  if (scale<0) return 1-scale;
+        //  return 1/(1+scale);
+    }
+}

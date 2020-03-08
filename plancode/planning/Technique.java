@@ -20,19 +20,22 @@ import java.util.*;
        You should have received a copy of the GNU General Public License
        along with this program.  If not, see https://www.gnu.org/licenses/.
     * */
-public class Technique {
+public class Technique
+{
     String identifier;
     int  productCode;
     double grossOutput;
     double [] inputUsage;
     int [] inputCodes;
+    boolean frozen=false;
 
     /** PC is the product code produced<p>
      * gO is the gross output working at standard capacity <p>
      * usage is the amount of each input used at standard capacity<p>
      * codes are the product codes of the inputs being used, stands in one to one
      * correspondence to the usage entries */
-    public  Technique (String id, int PC, double gO, double[] usage,int[]codes) {
+    public  Technique (String id, int PC, double gO, double[] usage,int[]codes)
+    {
         identifier=id;
         productCode=PC;
         grossOutput=gO;
@@ -41,60 +44,72 @@ public class Technique {
     }
     /** tells you the rate of harmony gain per unit of input where both output and input are
      * measured in contribution to total harmony */
-    public double rateOfHarmonyGain(double[]derivativeOfProductHarmony) {
+    public double rateOfHarmonyGain(double[]derivativeOfProductHarmony)
+    {
         double gain = derivativeOfProductHarmony[ productCode]* grossOutput;
         double cost=0;
-        for(int j=0; j< inputCodes.length; j++) {
-            cost+=derivativeOfProductHarmony[ inputCodes[j]]* inputUsage[j];
-        }
-    //    System.out.println(identifier+","+productCode+","+gain+","+cost+","+((gain-cost)/cost ));
+        for(int j=0; j< inputCodes.length; j++)
+            {
+                cost+=derivativeOfProductHarmony[ inputCodes[j]]* inputUsage[j];
+            }
+        // set cost to be average cost
+        cost = cost / inputCodes.length;
+        //    System.out.println(identifier+","+productCode+","+gain+","+cost+","+((gain-cost)/cost ));
         return (gain-cost)/cost;
     }
-      /** generates a string representation that is parsable by the Eplc compiler
-     * this requires the use of C a technology complex to give the string ids
-     * of the parameters to the input and outputs */
-    public String toString(TechnologyComplex C) {
-        return head(C)+tail(C);
-    }
-    String head(TechnologyComplex C) {
-        String s = "Technique "+identifier+"[";
-        for (int i=0; i<inputUsage.length; i++)
-            s+= " "+inputUsage[i]+" "+C.productIds[inputCodes[i]];
-        return s+"]->";
-    }
-    String tail(TechnologyComplex C) {
-        return " "+grossOutput+" "+
-               C.productIds[productCode];
-    }
-    static int findiIna(int i, int[] a) {
+    static int findiIna(int i, int[] a)
+    {
         for (int j=0; j<a.length; j++)if(a[j]==i)return j;
         return -1;
     }
     /** return the marginal physical product of the output good in terms
      * of one extra unit of the input */
-    public double  marginalphysicalproduct(int    input) {
-
+    public double  marginalphysicalproduct(int    input)
+    {
         int pos =findiIna(input,  inputCodes);
         return  grossOutput/  inputUsage[pos];
     }
-    public int getProductCode() {
+    public int getProductCode()
+    {
         return productCode;
     }
-    public double getGrossOutput() {
+    public double getGrossOutput()
+    {
         return grossOutput;
     }
-    public double []getInputUsage() {
+    public double []getInputUsage()
+    {
         return inputUsage;
     }
-    public int[] getInputCodes() {
+    public int[] getInputCodes()
+    {
         return inputCodes;
     }
-    public String getIdentifier() {
+    public String getIdentifier()
+    {
         return identifier;
     }
-    public String toString() {
-        return  "Technique{"+identifier+","+productCode+","+grossOutput
+    public String toString()
+    {
+        return  "Technique "+identifier+"["+productCode+","+grossOutput
                 +",\n"+  Arrays.toString(inputUsage)+",\n"+
-                Arrays.toString(inputCodes)+"\n}";
+                Arrays.toString(inputCodes)+"\n]";
     }
+    public String toString(TechnologyComplex C)
+    {
+        return head(C)+tail(C);
+    }
+    String head(TechnologyComplex C)
+    {
+        String s = "Technique "+identifier+"[";
+        for (int i=0; i<inputUsage.length; i++)
+            s+= " "+inputUsage[i]+" "+C.productIds[inputCodes[i]];
+        return s+"]->";
+    }
+    String tail(TechnologyComplex C)
+    {
+        return " "+grossOutput+" "+
+               C.productIds[productCode];
+    }
+
 };

@@ -20,7 +20,8 @@ import java.util.*;
        You should have received a copy of the GNU General Public License
        along with this program.  If not, see https://www.gnu.org/licenses/.
     * */
-public class TechnologyComplex {
+public class TechnologyComplex
+{
 
     public Vector< Technique > techniques= new Vector<Technique>();
     public String[] productIds;
@@ -29,71 +30,96 @@ public class TechnologyComplex {
     Vector< Vector<Integer>> userIndex =null;
     public boolean[] nonfinal;
     /** return a vector indexed by product each of whose elements is a vector of indices of techniques that use the product */
-    public Vector< Vector<Integer> > buildUserIndex() {
-        if(userIndex==null) {
-            Vector<Vector<Integer> > index = new Vector< Vector<Integer>>( );
-            for (int i=0; i<productCount(); i++)
-                index.add(new Vector<Integer>());
-
-            for (int i =0; i<techniqueCount(); i++) {
-                Technique t= techniques.elementAt(i);
-                for (int j=0; j<t.inputCodes.length; j++) {
-                    index.elementAt(t.inputCodes[j]).add(new Integer(i));
-                }
-
+    public Vector< Vector<Integer> > buildUserIndex()
+    {
+        if(userIndex==null)
+            {
+                Vector<Vector<Integer> > index = new Vector< Vector<Integer>>( );
+                for (int i=0; i<productCount(); i++)
+                    index.add(new Vector<Integer>());
+                for (int i =0; i<techniqueCount(); i++)
+                    {
+                        Technique t= techniques.elementAt(i);
+                        for (int j=0; j<t.inputCodes.length; j++)
+                            {
+                                index.elementAt(t.inputCodes[j]).add(new Integer(i));
+                            }
+                    }
+                userIndex=index;
+                return index;
             }
-            userIndex=index;
-            return index;
-        }
         return userIndex;
+    }
+    /** return comma separated string of the names of the products */
+    public String prodheadings()
+    {
+        String s="";
+        for(String p:productIds)s+=","+p;
+        //for(Technique t:techniques) s+=","+t.getIdentifier() ;
+        return s;
+    }
+    /** return comma separated string of the names of the techniques */
+    public String techheadings()
+    {
+        String s="";
+        //    for(String p:productIds)s+=","+p;
+        for(Technique t:techniques) s+=","+t.getIdentifier() ;
+        return s;
     }
 
     /** return a vector indexed by product each of whose elements is a vector of  indices of techniques that make that product */
-    public Vector< Vector<Integer> > buildProducerIndex() {
-        if(producerIndex==null) {
-            Vector<Vector<Integer> > index = new Vector< Vector<Integer>>( );
-            for (int i=0; i<productCount(); i++)
-                index.add(new Vector<Integer>());
-            for (int i =0; i<techniqueCount(); i++) {
-                Technique t= techniques.elementAt(i);
-                index.elementAt(t.productCode).add(new Integer(i));
-                if(t instanceof JointProductionTechnique) {
-                    JointProductionTechnique J= (JointProductionTechnique)t;
-                    for (int j=0; j<J.coproductCodes.length; j++)
-                        index.elementAt(J.coproductCodes[j]).add(new Integer(i));
-                }
+    public Vector< Vector<Integer> > buildProducerIndex()
+    {
+        if(producerIndex==null)
+            {
+                Vector<Vector<Integer> > index = new Vector< Vector<Integer>>( );
+                for (int i=0; i<productCount(); i++)
+                    index.add(new Vector<Integer>());
+                for (int i =0; i<techniqueCount(); i++)
+                    {
+                        Technique t= techniques.elementAt(i);
+                        index.elementAt(t.productCode).add(new Integer(i));
+                        if(t instanceof JointProductionTechnique)
+                            {
+                                JointProductionTechnique J= (JointProductionTechnique)t;
+                                for (int j=0; j<J.coproductCodes.length; j++)
+                                    index.elementAt(J.coproductCodes[j]).add(new Integer(i));
+                            }
+                    }
+                producerIndex=index;
+                return index;
             }
-            producerIndex=index;
-            return index;
-        }
         return producerIndex;
     }
-    public TechnologyComplex(int NumberOfProducts) {
-
+    public TechnologyComplex(int NumberOfProducts)
+    {
         productIds= new String[NumberOfProducts];
         nonproduced=new boolean[NumberOfProducts];
         nonfinal=new boolean[NumberOfProducts];
     }
-    public void addTechnique(Technique t) {
+    public void addTechnique(Technique t)
+    {
         techniques.add(t);
     }
-    public void setProductName(int productCode,String productName) {
-
+    public void setProductName(int productCode,String productName)
+    {
         productIds[productCode]=productName;
-
     }
     /** return a comma separated string of all the product and technology names, products first then techniques */
 
-    public String allheadings() {
+    public String allheadings()
+    {
         String s="";
         for(String p:productIds)s+=","+p;
         for(Technique t:techniques) s+=","+t.getIdentifier() ;
         return s;
     }
-    public int productCount() {
+    public int productCount()
+    {
         return productIds.length;
     }
-    public int techniqueCount() {
+    public int techniqueCount()
+    {
         return techniques.size();
     }
 }
